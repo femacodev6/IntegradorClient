@@ -24,7 +24,8 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/web.config"
             ],
             "styles": [
               "src/styles.scss"
@@ -64,7 +65,10 @@
               "buildTarget": "IntegradorClient:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+             "proxyConfig": "src/proxy.conf.json"
+           }
         },
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n"
@@ -87,5 +91,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }
