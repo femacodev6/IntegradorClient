@@ -33,6 +33,50 @@ export interface Tardanza {
       tolerancia?: number
 }
 
+// models/tardanzas.model.ts
+export interface TardanzasBuk {
+  id: number;
+  day: number;
+  month: number;
+  year: number;
+  hours: number;
+  employeeId: number;
+  typeId: number;
+}
+
+export interface TardanzasInngresa {
+  identificacion: string;
+  nombre: string;
+  apellidos: string;
+  dia: string;
+  turno: string;
+  atraso: number;
+  entradaReal: string;
+  entrada: string;
+  momentoRevision?: boolean | null;
+  aprobador?: string | null;
+  observaciones?: string | null;
+  tolerancia: number;
+}
+
+export interface GrupoTardanzas {
+  identificacion: string;
+  nombre: string;
+  apellidos: string;
+  totalAtraso: number;
+  tardanzas: TardanzasInngresa[];
+}
+
+export interface GrupoTardanzasBuk {
+  identificacion: string;
+  nombre: string;
+  apellidos: string;
+  totalAtraso: number;
+  tardanzas: TardanzasInngresa[];
+  idBuk: number;
+  tardanzasBuk?: TardanzasBuk | null;
+}
+
 @Injectable()
 export class TardanzaService {
 
@@ -44,6 +88,16 @@ export class TardanzaService {
         }
         const url = `/api/Tardanzas/ObtenerTardanzas?fechaInicio=${fi}&fechaFin=${ff}`;
         return firstValueFrom(this.http.get<Tardanza[]>(url));
+    }
+    
+    getTardanzasGrupoData(fechaInicio?: string, fechaFin?: string): Promise<GrupoTardanzasBuk[]> {
+        const fi = fechaInicio;
+        const ff = fechaFin;
+        if (!fi || !ff) {
+            return Promise.reject('Selecciona fecha inicio y fecha fin');
+        }
+        const url = `/api/Tardanzas/ObtenerTardanzasConBuk?fechaInicio=${fi}&fechaFin=${ff}`;
+        return firstValueFrom(this.http.get<GrupoTardanzasBuk[]>(url));
     }
 
     status: string[] = ['OUTOFSTOCK', 'INSTOCK', 'LOWSTOCK'];
@@ -85,6 +139,10 @@ export class TardanzaService {
 
     getTardanzas(fechaInicio :string,fechaFin: string): Promise<Tardanza[]> {
         return this.getTardanzasData(fechaInicio,fechaFin);
+    }
+    
+    getTardanzasGrupo(fechaInicio :string,fechaFin: string): Promise<GrupoTardanzasBuk[]> {
+        return this.getTardanzasGrupoData(fechaInicio,fechaFin);
     }
     
     getTardanzasWithOrdersSmall() {

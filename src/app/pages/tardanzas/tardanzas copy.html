@@ -15,7 +15,7 @@
 </p-toolbar>
 
 <div class="card">
-    <p-table [value]="tardanzasGrupo()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
+    <p-table [value]="groupedTardanzas()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
         [expandedRowKeys]="expandedRows" showGridlines>
         
         <ng-template #header>
@@ -26,8 +26,7 @@
                 <th style="width: 5rem"></th>
                 <th>Identificacion</th>
                 <th>Nombre</th>
-                <th>Atrazo Inngresa</th>
-                <th>Atrazo Buk Acum. Mes</th>
+                <th>Atrazo</th>
             </tr>
         </ng-template>
         <ng-template #body let-groupedTardanza let-expanded="expanded">
@@ -41,8 +40,7 @@
                 </td>
                 <td>{{ groupedTardanza.identificacion }}</td>
                 <td>{{ groupedTardanza.nombre + " " + groupedTardanza.apellidos}}</td>
-                <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
-                <td>{{ groupedTardanza.tardanzasBuk?.hours | hoursToFriendly }}</td>
+                <td>{{ groupedTardanza.totalAtraso }}</td>
             </tr>
         </ng-template>
         <ng-template #expandedrow let-groupedTardanza>
@@ -60,10 +58,6 @@
                     Dia
                     <p-sortIcon field="dia" />
                 </th>
-                <th pSortableColumn="entrada">
-                    Entrada
-                    <p-sortIcon field="entrada" />
-                </th>
                 <th pSortableColumn="entrada_real">
                     Entrada real
                     <p-sortIcon field="entrada_real" />
@@ -77,26 +71,13 @@
         <ng-template #body let-tardanza>
             <tr>
                 <td>{{ tardanza.dia }}</td>
-                <td>{{ tardanza.entrada }}</td>
-                <td>{{ tardanza.entradaReal }}</td>
-                <td>{{ tardanza.atraso | minutesToFriendly }} </td>
+                <td>{{ tardanza.entrada_real }}</td>
+                <td>{{ tardanza.atraso }}</td>
                 
             </tr>
         </ng-template>
     </p-table>
 </div>
-
-<div class="p-4" style="display: flex; flex-direction: column;">
-    <div style="flex: 1;">
-        <!-- Aquí va tu contenido -->
-    </div>
-    <div style="display: flex; justify-content: flex-end;">
-      <p-button label="Traslapar" severity="warn" class="mr-2"
-              (onClick)="loadDemoData()" />
-  </div>
-</div>
-
-
 </td>
 </tr>
 </ng-template>
@@ -153,3 +134,72 @@
         </tr>
     </ng-template>
 </p-table> -->
+
+<p-dialog [(visible)]="tardanzaDialog" [style]="{ width: '450px' }" header="Tardanza Details" [modal]="true">
+    <ng-template #content>
+        <div class="flex flex-col gap-6">
+            <img [src]="'https://primefaces.org/cdn/primeng/images/demo/tardanza/' + tardanza.image"
+                [alt]="tardanza.image" class="block m-auto pb-4" *ngIf="tardanza.image" />
+            <div>
+                <label for="name" class="block font-bold mb-3">Name</label>
+                <input type="text" pInputText id="name" [(ngModel)]="tardanza.name" required autofocus fluid />
+                <small class="text-red-500" *ngIf="submitted && !tardanza.name">Name is required.</small>
+            </div>
+            <div>
+                <label for="description" class="block font-bold mb-3">Description</label>
+                <textarea id="description" pTextarea [(ngModel)]="tardanza.description" required rows="3" cols="20"
+                    fluid></textarea>
+            </div>
+
+            <div>
+                <label for="inventoryStatus" class="block font-bold mb-3">Inventory Status</label>
+                <p-select [(ngModel)]="tardanza.inventoryStatus" inputId="inventoryStatus" [options]="statuses"
+                    optionLabel="label" optionValue="label" placeholder="Select a Status" fluid />
+            </div>
+
+            <div>
+                <span class="block font-bold mb-4">Category</span>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="flex items-center gap-2 col-span-6">
+                        <p-radiobutton id="category1" name="category" value="Accessories"
+                            [(ngModel)]="tardanza.category" />
+                        <label for="category1">Accessories</label>
+                    </div>
+                    <div class="flex items-center gap-2 col-span-6">
+                        <p-radiobutton id="category2" name="category" value="Clothing"
+                            [(ngModel)]="tardanza.category" />
+                        <label for="category2">Clothing</label>
+                    </div>
+                    <div class="flex items-center gap-2 col-span-6">
+                        <p-radiobutton id="category3" name="category" value="Electronics"
+                            [(ngModel)]="tardanza.category" />
+                        <label for="category3">Electronics</label>
+                    </div>
+                    <div class="flex items-center gap-2 col-span-6">
+                        <p-radiobutton id="category4" name="category" value="Fitness" [(ngModel)]="tardanza.category" />
+                        <label for="category4">Fitness</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-6">
+                    <label for="price" class="block font-bold mb-3">Price</label>
+                    <p-inputnumber id="price" [(ngModel)]="tardanza.price" mode="currency" currency="USD" locale="en-US"
+                        fluid />
+                </div>
+                <div class="col-span-6">
+                    <label for="quantity" class="block font-bold mb-3">Quantity</label>
+                    <p-inputnumber id="quantity" [(ngModel)]="tardanza.quantity" fluid />
+                </div>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template #footer>
+        <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
+        <p-button label="Save" icon="pi pi-check" (click)="saveTardanza()" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmdialog [style]="{ width: '450px' }" />

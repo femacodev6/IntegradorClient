@@ -18,10 +18,12 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Tardanza, TardanzaService } from '../service/tardanza.service';
+import { Tardanza, GrupoTardanzasBuk, TardanzaService } from '../service/tardanza.service';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FloatLabel } from 'primeng/floatlabel';
 import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
+import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
+import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
 
 interface Column {
     field: string;
@@ -63,7 +65,9 @@ interface GrupoTardanzas {
         IconFieldModule,
         ConfirmDialogModule,
         DatePickerModule,
-        FloatLabel
+        FloatLabel,
+        MinutesToFriendlyPipe,
+        HoursToFriendlyPipe
     ],
     templateUrl: './tardanzas.html',
     providers: [MessageService, TardanzaService, ConfirmationService]
@@ -78,6 +82,8 @@ export class Tardanzas implements OnInit {
     tardanzaDialog: boolean = false;
 
     tardanzas = signal<Tardanza[]>([]);
+
+    tardanzasGrupo = signal<GrupoTardanzasBuk[]>([]);
 
     tardanza!: Tardanza;
 
@@ -1881,8 +1887,13 @@ export class Tardanzas implements OnInit {
             }
         ]
         // this.tardanzas.set(data);
-        this.tardanzaService.getTardanzas(fi, ff).then((data) => {
-            this.tardanzas.set(data);
+   
+        // this.tardanzaService.getTardanzas(fi, ff).then((data) => {
+        //     this.tardanzas.set(data);
+        // });
+   
+        this.tardanzaService.getTardanzasGrupo(fi, ff).then((data) => {
+            this.tardanzasGrupo.set(data);
         });
 
 
@@ -1891,6 +1902,7 @@ export class Tardanzas implements OnInit {
             { field: 'dia', header: 'Dia' },
             { field: 'entrada_real', header: 'Entrada Real' },
             { field: 'atraso', header: 'Atraso' },
+            { field: 'atraso', header: 'Atraso2' },
         ];
 
         this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
