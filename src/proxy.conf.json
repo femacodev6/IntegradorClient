@@ -1,6 +1,9 @@
 {
-   "/Tardanzas": {
-     "target": "http://localhost:5161",
-     "secure": false
-   }
- }
+  "/api": {
+    "target": "http://localhost:5161",
+    "secure": false,
+    "pathRewrite": {
+      "^/api": ""
+    }
+  }
+}

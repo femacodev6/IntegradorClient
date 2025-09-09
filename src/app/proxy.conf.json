@@ -1,0 +1,6 @@
+{
+   "/Tardanzas": {
+     "target": "http://192.168.1.50:10050",
+     "secure": false
+   }
+ }
