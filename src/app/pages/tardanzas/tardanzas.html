@@ -42,10 +42,10 @@
                 <td>{{ groupedTardanza.identificacion }}</td>
                 <td>{{ groupedTardanza.nombre + " " + groupedTardanza.apellidos}}</td>
                 <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
-                <td>{{ groupedTardanza.tardanzasBuk?.hours | hoursToFriendly }}</td>
+                <td>{{ groupedTardanza.tardanzasBuk()?.hours | hoursToFriendly }}</td>
             </tr>
         </ng-template>
-        <ng-template #expandedrow let-groupedTardanza>
+        <ng-template #expandedrow let-groupedTardanza let-rowIndex="rowIndex">
             <tr>
                 <td colspan="7">
                     <div class="p-4">
@@ -91,8 +91,8 @@
         <!-- Aquí va tu contenido -->
     </div>
     <div style="display: flex; justify-content: flex-end;">
-      <p-button label="Traslapar" severity="warn" class="mr-2"
-              (onClick)="loadDemoData()" />
+      <p-button label="Traspasar" severity="warn" class="mr-2"
+              (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
   </div>
 </div>
 

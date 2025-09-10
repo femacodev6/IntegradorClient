@@ -18,7 +18,7 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Tardanza, GrupoTardanzasBuk, TardanzaService } from '../service/tardanza.service';
+import { Tardanza, GrupoTardanzasBuk,TardanzasBuk, TardanzaService } from '../service/tardanza.service';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FloatLabel } from 'primeng/floatlabel';
 import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
@@ -131,6 +131,14 @@ export class Tardanzas implements OnInit {
         const day = ('0' + d.getDate()).slice(-2);
         return `${y}-${m}-${day}`;
     }
+    atrazoToBuk(index: number, groupedTardanza: GrupoTardanzasBuk) {
+        this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio).then((data) => {
+            const item = this.tardanzasGrupo()[index];
+            if (!item) return;
+            item?.tardanzasBuk?.set(data.ausencia);
+        });
+    }
+
     loadDemoData() {
         const fi = this.formatDate(this.fechaInicio);
         const ff = this.formatDate(this.fechaFin);
@@ -1887,13 +1895,20 @@ export class Tardanzas implements OnInit {
             }
         ]
         // this.tardanzas.set(data);
-   
+
         // this.tardanzaService.getTardanzas(fi, ff).then((data) => {
         //     this.tardanzas.set(data);
         // });
-   
+
         this.tardanzaService.getTardanzasGrupo(fi, ff).then((data) => {
-            this.tardanzasGrupo.set(data);
+              const mapped = (data as any[]).map(g => ({
+    ...g,
+    // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
+    tardanzasBuk: signal<TardanzasBuk | undefined>(g.tardanzasBuk ?? null)
+  })) as GrupoTardanzasBuk[];
+
+  this.tardanzasGrupo.set(mapped);
+            // this.tardanzasGrupo.set(data);
         });
 
 
@@ -1997,6 +2012,8 @@ export class Tardanzas implements OnInit {
                 return 'info';
         }
     }
+
+
 
     saveTardanza() {
         this.submitted = true;
