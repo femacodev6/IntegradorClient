@@ -9,15 +9,14 @@
             <p-datepicker [(ngModel)]="fechaFin" />
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
-        <p-button label="Ver tardanzas" severity="info" class="mr-2"
-            (onClick)="loadDemoData()" />
+        <p-button label="Ver tardanzas" severity="info" class="mr-2" (onClick)="loadDemoData()" />
     </ng-template>
 </p-toolbar>
 
 <div class="card">
     <p-table [value]="tardanzasGrupo()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
         [expandedRowKeys]="expandedRows" showGridlines>
-        
+
         <ng-template #header>
             <tr>
                 <th style="width: 3rem">
@@ -80,7 +79,7 @@
                 <td>{{ tardanza.entrada }}</td>
                 <td>{{ tardanza.entradaReal }}</td>
                 <td>{{ tardanza.atraso | minutesToFriendly }} </td>
-                
+
             </tr>
         </ng-template>
     </p-table>
@@ -91,65 +90,11 @@
         <!-- Aquí va tu contenido -->
     </div>
     <div style="display: flex; justify-content: flex-end;">
-      <p-button label="Traspasar" severity="warn" class="mr-2"
-              (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
-  </div>
+        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
+    </div>
 </div>
-
-
 </td>
 </tr>
 </ng-template>
 </p-table>
 </div>
-<!-- 
-<p-table #dt [value]="tardanzas()" [rows]="10" [columns]="cols" [paginator]="false"
-    [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
-    [tableStyle]="{ 'min-width': '100%' }" [(selection)]="selectedTardanzas" [rowHover]="true" dataKey="id">
-    <ng-template #caption>
-        <div class="flex items-center justify-between">
-            <h5 class="m-0">Reporte de tardanzas</h5>
-        </div>
-    </ng-template>
-    <ng-template #header>
-        <tr>
-            <th style="width: 3rem">
-                <p-tableHeaderCheckbox />
-            </th>
-            <th pSortableColumn="nombre" style="min-width:16rem">
-                Nombre
-                <p-sortIcon field="nombre" />
-            </th>
-            <th pSortableColumn="dia">
-                Dia
-                <p-sortIcon field="dia" />
-            </th>
-            <th pSortableColumn="entrada_real">
-                Entrada real
-                <p-sortIcon field="entrada_real" />
-            </th>
-            <th pSortableColumn="atraso">
-                Atraso
-                <p-sortIcon field="atraso" />
-            </th>
-            <th style="min-width: 12rem"></th>
-        </tr>
-    </ng-template>
-    <ng-template #body let-tardanza>
-        <tr>
-            <td style="width: 3rem">
-                <p-tableCheckbox [value]="tardanza" />
-            </td>
-            <td style="min-width: 16rem">{{ tardanza.nombre }}</td>
-            <td>{{ tardanza.dia }}</td>
-            <td>{{ tardanza.entrada_real }}</td>
-            <td>{{ tardanza.atraso }}</td>
-            <td>
-                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true"
-                    (click)="editTardanza(tardanza)" />
-                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true"
-                    (click)="deleteTardanza(tardanza)" />
-            </td>
-        </tr>
-    </ng-template>
-</p-table> -->

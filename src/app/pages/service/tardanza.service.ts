@@ -2,10 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { WritableSignal } from '@angular/core';
-interface InventoryStatus {
-    label: string;
-    value: string;
-}
 
 export interface Tardanza {
     id?: string;
@@ -33,7 +29,6 @@ export interface Tardanza {
     tolerancia?: number
 }
 
-// models/tardanzas.model.ts
 export interface TardanzasBuk {
     id: number;
     day: number;
@@ -97,15 +92,15 @@ export interface HorasNoTrabajadasResponse {
 @Injectable()
 export class TardanzaService {
 
-    getTardanzasData(fechaInicio?: string, fechaFin?: string): Promise<Tardanza[]> {
-        const fi = fechaInicio;
-        const ff = fechaFin;
-        if (!fi || !ff) {
-            return Promise.reject('Selecciona fecha inicio y fecha fin');
-        }
-        const url = `/api/Tardanzas/ObtenerTardanzas?fechaInicio=${fi}&fechaFin=${ff}`;
-        return firstValueFrom(this.http.get<Tardanza[]>(url));
-    }
+    // getTardanzasData(fechaInicio?: string, fechaFin?: string): Promise<Tardanza[]> {
+    //     const fi = fechaInicio;
+    //     const ff = fechaFin;
+    //     if (!fi || !ff) {
+    //         return Promise.reject('Selecciona fecha inicio y fecha fin');
+    //     }
+    //     const url = `/api/Tardanzas/ObtenerTardanzas?fechaInicio=${fi}&fechaFin=${ff}`;
+    //     return firstValueFrom(this.http.get<Tardanza[]>(url));
+    // }
 
     postTardanzasData(groupedTardanza: GrupoTardanzasBuk, fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
         const url = `/api/Tardanzas/TraspasarAtrazoToBuk`;
@@ -128,99 +123,13 @@ export class TardanzaService {
         return firstValueFrom(this.http.get<GrupoTardanzasBuk[]>(url));
     }
 
-    status: string[] = ['OUTOFSTOCK', 'INSTOCK', 'LOWSTOCK'];
-
-    tardanzaNames: string[] = [
-        'Bamboo Watch',
-        'Black Watch',
-        'Blue Band',
-        'Blue T-Shirt',
-        'Bracelet',
-        'Brown Purse',
-        'Chakra Bracelet',
-        'Galaxy Earrings',
-        'Game Controller',
-        'Gaming Set',
-        'Gold Phone Case',
-        'Green Earbuds',
-        'Green T-Shirt',
-        'Grey T-Shirt',
-        'Headphones',
-        'Light Green T-Shirt',
-        'Lime Band',
-        'Mini Speakers',
-        'Painted Phone Case',
-        'Pink Band',
-        'Pink Purse',
-        'Purple Band',
-        'Purple Gemstone Necklace',
-        'Purple T-Shirt',
-        'Shoes',
-        'Sneakers',
-        'Teal T-Shirt',
-        'Yellow Earbuds',
-        'Yoga Mat',
-        'Yoga Set'
-    ];
-
     constructor(private http: HttpClient) { }
 
-    getTardanzas(fechaInicio: string, fechaFin: string): Promise<Tardanza[]> {
-        return this.getTardanzasData(fechaInicio, fechaFin);
-    }
+    // getTardanzas(fechaInicio: string, fechaFin: string): Promise<Tardanza[]> {
+    //     return this.getTardanzasData(fechaInicio, fechaFin);
+    // }
 
     getTardanzasGrupo(fechaInicio: string, fechaFin: string): Promise<GrupoTardanzasBuk[]> {
         return this.getTardanzasGrupoData(fechaInicio, fechaFin);
-    }
-
-    getTardanzasWithOrdersSmall() {
-        // return Promise.resolve(this.getTardanzasWithOrdersData().slice(0, 10));
-    }
-
-    generatePrduct(): Tardanza {
-        const tardanza: Tardanza = {
-            id: this.generateId(),
-            name: this.generateName(),
-            description: 'Tardanza Description',
-            price: this.generatePrice(),
-            quantity: this.generateQuantity(),
-            category: 'Tardanza Category',
-            inventoryStatus: this.generateStatus(),
-            rating: this.generateRating()
-        };
-
-        tardanza.image = tardanza.name?.toLocaleLowerCase().split(/[ ,]+/).join('-') + '.jpg';
-        return tardanza;
-    }
-
-    generateId() {
-        let text = '';
-        let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-        for (var i = 0; i < 5; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-
-        return text;
-    }
-
-    generateName() {
-        return this.tardanzaNames[Math.floor(Math.random() * Math.floor(30))];
-    }
-
-    generatePrice() {
-        return Math.floor(Math.random() * Math.floor(299) + 1);
-    }
-
-    generateQuantity() {
-        return Math.floor(Math.random() * Math.floor(75) + 1);
-    }
-
-    generateStatus() {
-        return this.status[Math.floor(Math.random() * Math.floor(3))];
-    }
-
-    generateRating() {
-        return Math.floor(Math.random() * Math.floor(5) + 1);
     }
 }

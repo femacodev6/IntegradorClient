@@ -35,6 +35,11 @@ export class AppMenu {
                         icon: 'pi pi-fw pi-hourglass',
                         routerLink: ['/pages/tardanza']
                     },
+                    {
+                        label: 'Permisos',
+                        icon: 'pi pi-fw pi-tablet',
+                        routerLink: ['/pages/permiso']
+                    },
                 ]
             },
         ];

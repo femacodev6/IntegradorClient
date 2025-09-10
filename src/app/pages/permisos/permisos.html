@@ -1,0 +1,85 @@
+<style>
+  .azul {
+    background-color: #438eb9;
+    color: aliceblue;
+    font-size: 20px;
+  }
+  .verde {
+    background-color: #8fc74a;
+    color: beige;
+    font-size: 20px;
+  }
+  .border-azul {
+    border: 2px solid #438eb9;
+  }
+  .border-verde {
+    border: 2px solid #8fc74a;
+  }
+</style>
+<h5 class="m-0">Reporte de permisos</h5>
+<p-toolbar styleClass="mb-6">
+    <ng-template #start>
+        <p-floatlabel variant="on">
+            <p-datepicker [(ngModel)]="fechaInicio" />
+            <label for="on_label">Fecha Inicio</label>
+        </p-floatlabel>
+        <p-floatlabel variant="on">
+            <p-datepicker [(ngModel)]="fechaFin" />
+            <label for="on_label">Fecha Fin</label>
+        </p-floatlabel>
+        <p-button label="Ver permisos" severity="info" class="mr-2" (onClick)="loadDemoData()" />
+    </ng-template>
+</p-toolbar>
+
+<div class="card">
+    <p-table [value]="unionTodosBukInntegra()" dataKey="identificacion" size="small" [tableStyle]="{ 'min-width': '60rem' }"
+        [expandedRowKeys]="expandedRows" showGridlines>
+
+        <ng-template #header>
+            <tr>
+            <th></th>
+            <th colspan="6" class="azul">Inntegra</th>
+            <th colspan="6" class="verde">Buk</th>
+        </tr>
+            <tr>
+                <th style="width: 3rem">
+                    <p-tableHeaderCheckbox />
+                </th>
+                <th class="azul">Permiso por</th>
+                <th class="azul">Inicio</th>
+                <th class="azul">Fin</th>
+                <th class="azul">DNI</th>
+                <th class="azul">Tipo de Permiso</th>
+                <th class="azul">Nombre</th>
+                <!-- buk -->
+                <th class="verde">Tipo de Permiso</th>
+                <th class="verde">Inicio</th>
+                <th class="verde">Fin</th>
+                <th class="verde">DNI</th>
+                <th class="verde">Nombre</th>
+                <th class="verde">Pagado</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-unionTodosBukInntegra>
+            <tr>
+                <td style="width: 3rem">
+                    <p-tableCheckbox [value]="unionTodosBukInntegra" />
+                </td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso? unionTodosBukInntegra.permiso?.allday? "Días" : "Horas": "" }}</td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.inicio }}</td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fin }}</td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.identificacion }}</td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.tipoDePermiso }}</td>
+                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fullname }}</td>
+                <!-- buk -->
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.tipo_buk }}</td>
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.start_date }}</td>
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.end_date }}</td>
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.dni }}</td>
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.fullname }}</td>
+                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk? unionTodosBukInntegra.todosBuk?.paid=="true"?"Si":"No" : "" }}</td>
+
+            </tr>
+        </ng-template>
+</p-table>
+</div>

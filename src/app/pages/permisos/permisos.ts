@@ -18,7 +18,7 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Tardanza, GrupoTardanzasBuk, TardanzasBuk, TardanzaService } from '../service/tardanza.service';
+import { PermisosModelos, TodosBuk, UnionTodosBukInntegra, PermisoService } from '../service/permiso.service';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FloatLabel } from 'primeng/floatlabel';
 import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
@@ -35,15 +35,9 @@ interface ExportColumn {
     title: string;
     dataKey: string;
 }
-interface GrupoTardanzas {
-    identificacion: string;
-    nombre: string | undefined;
-    apellidos: string | undefined;
-    totalAtraso: number;
-    tardanzas: Tardanza[];
-}
+
 @Component({
-    selector: 'app-tardanza',
+    selector: 'app-permiso',
     standalone: true,
     imports: [
         CommonModule,
@@ -69,25 +63,25 @@ interface GrupoTardanzas {
         MinutesToFriendlyPipe,
         HoursToFriendlyPipe
     ],
-    templateUrl: './tardanzas.html',
-    providers: [MessageService, TardanzaService, ConfirmationService]
+    templateUrl: './permisos.html',
+    providers: [MessageService, PermisoService, ConfirmationService]
 })
 
 
-export class Tardanzas implements OnInit {
+export class Permisos implements OnInit {
 
     fechaInicio: Date | null = null;
     fechaFin: Date | null = null;
 
-    tardanzaDialog: boolean = false;
+    permisoDialog: boolean = false;
 
-    tardanzas = signal<Tardanza[]>([]);
+    unionTodosBukInntegra = signal<UnionTodosBukInntegra[]>([]);
 
-    tardanzasGrupo = signal<GrupoTardanzasBuk[]>([]);
+    // permisosGrupo = signal<GrupoPermisosBuk[]>([]);
 
-    tardanza!: Tardanza;
+    permiso!: UnionTodosBukInntegra;
 
-    selectedTardanzas!: Tardanza[] | null;
+    selectedPermisos!: UnionTodosBukInntegra[] | null;
 
     submitted: boolean = false;
 
@@ -101,23 +95,12 @@ export class Tardanzas implements OnInit {
     expandedRows = {};
 
     constructor(
-        private tardanzaService: TardanzaService,
+        private permisoService: PermisoService,
     ) { }
-
-    groupedTardanzas = computed((): GrupoTardanzas[] => {
-        const groups = this.tardanzas().reduce<Record<string, GrupoTardanzas>>((acc, t) => {
-            const key = String(t.identificacion);
-            if (!acc[key]) acc[key] = { identificacion: key, nombre: t.nombre, apellidos: t.apellidos, totalAtraso: 0, tardanzas: [] };
-            acc[key].totalAtraso += Number(t.atraso ?? 0);
-            acc[key].tardanzas.push(t);
-            return acc;
-        }, {});
-
-        return Object.values(groups);
-    });
 
     ngOnInit() {
     }
+
     private formatDate(d: Date | null): string {
         if (!d) return '';
         const y = d.getFullYear();
@@ -126,26 +109,20 @@ export class Tardanzas implements OnInit {
         return `${y}-${m}-${day}`;
     }
 
-    atrazoToBuk(index: number, groupedTardanza: GrupoTardanzasBuk) {
-        this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio).then((data) => {
-            const item = this.tardanzasGrupo()[index];
-            if (!item) return;
-            item?.tardanzasBuk?.set(data.ausencia);
-        });
-    }
+    // atrazoToBuk(index: number, groupedPermiso: GrupoPermisosBuk) {
+    //     this.permisoService.postPermisosData(groupedPermiso, this.fechaInicio).then((data) => {
+    //         const item = this.permisosGrupo()[index];
+    //         if (!item) return;
+    //         item?.permisosBuk?.set(data.ausencia);
+    //     });
+    // }
 
     loadDemoData() {
-        const fi = this.formatDate(this.fechaInicio);
-        const ff = this.formatDate(this.fechaFin);
+        const fi = this.formatDate(this.fechaInicio)+"T00:00";
+        const ff = this.formatDate(this.fechaFin)+"T23:59";
 
-        this.tardanzaService.getTardanzasGrupo(fi, ff).then((data) => {
-            const mapped = (data as any[]).map(g => ({
-                ...g,
-                // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
-                tardanzasBuk: signal<TardanzasBuk | undefined>(g.tardanzasBuk ?? null)
-            })) as GrupoTardanzasBuk[];
-
-            this.tardanzasGrupo.set(mapped);
+        this.permisoService.getPermisos(fi, ff).then((data) => {
+            this.unionTodosBukInntegra.set(data);
         });
 
         this.cols = [
