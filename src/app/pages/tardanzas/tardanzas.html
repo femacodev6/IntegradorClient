@@ -1,11 +1,12 @@
+<p-toast />
 <h5 class="m-0">Reporte de tardanzas</h5>
 <p-toolbar styleClass="mb-6">
     <ng-template #start>
-        <p-floatlabel variant="on">
+        <p-floatlabel variant="on" class="mr-2">
             <p-datepicker [(ngModel)]="fechaInicio" />
             <label for="on_label">Fecha Inicio</label>
         </p-floatlabel>
-        <p-floatlabel variant="on">
+        <p-floatlabel variant="on" class="mr-2">
             <p-datepicker [(ngModel)]="fechaFin" />
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
@@ -13,33 +14,71 @@
     </ng-template>
 </p-toolbar>
 
-<div class="card">
-    <p-table [value]="tardanzasGrupo()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
+<div class="card" [style]="{'padding':'1em'}">
+    <div class="mb-2">
+        <p-select [options]="turnos()" [(ngModel)]="turnoSelected" [checkmark]="true" [showClear]="true" placeholder="Selecione un turno" class="w-full md:w-56" />
+    </div>
+
+    <p-table [value]="tardanzasGrupoFilter()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
         [expandedRowKeys]="expandedRows" showGridlines>
 
         <ng-template #header>
             <tr>
-                <th style="width: 3rem">
-                    <p-tableHeaderCheckbox />
-                </th>
                 <th style="width: 5rem"></th>
-                <th>Identificacion</th>
-                <th>Nombre</th>
-                <th>Atrazo Inngresa</th>
-                <th>Atrazo Buk Acum. Mes</th>
+                <!-- <th style="width: 3rem">
+                    <p-tableHeaderCheckbox />
+                </th> -->
+                <th pSortableColumn="identificacion">
+                    <div class="flex items-center gap-2">
+                        Identificacion
+                        <p-sortIcon field="identificacion" />
+                    </div>
+                </th>
+                <th pSortableColumn="nombre">
+                    <div class="flex items-center gap-2">
+                        Nombre
+                        <p-sortIcon field="nombre" />
+                    </div>
+                </th>
+                <th pSortableColumn="apellidos">
+                    <div class="flex items-center gap-2">
+                        Apellidos
+                        <p-sortIcon field="apellidos" />
+                    </div>
+                </th>
+                <th pSortableColumn="turnos">
+                    <div class="flex items-center gap-2">
+                        Turnos
+                        <p-sortIcon field="turnos" />
+                    </div>
+                </th>
+                <th pSortableColumn="totalAtraso">
+                    <div class="flex items-center gap-2">
+                        Atrazo Inngresa
+                        <p-sortIcon field="totalAtraso" />
+                    </div>
+                </th>
+                <th>
+                    Atrazo Buk Acum. {{mes()}}
+                </th>
             </tr>
         </ng-template>
         <ng-template #body let-groupedTardanza let-expanded="expanded">
             <tr>
-                <td style="width: 3rem">
-                    <p-tableCheckbox [value]="tardanza" />
-                </td>
                 <td>
                     <p-button type="button" pRipple [pRowToggler]="groupedTardanza" [text]="true" severity="secondary"
                         [rounded]="true" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
                 </td>
+                <!-- <td style="width: 3rem">
+                    <p-tableCheckbox [value]="tardanza" />
+                </td> -->
                 <td>{{ groupedTardanza.identificacion }}</td>
-                <td>{{ groupedTardanza.nombre + " " + groupedTardanza.apellidos}}</td>
+                <td>{{ groupedTardanza.nombre}}</td>
+                <td>{{ groupedTardanza.apellidos}}</td>
+                <td> @for (turno of groupedTardanza.turnos; track $index) {
+                    <p-chip [label]="turno" />
+                    }
+                </td>
                 <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
                 <td>{{ groupedTardanza.tardanzasBuk()?.hours | hoursToFriendly }}</td>
             </tr>
@@ -55,6 +94,10 @@
                             dataKey="id">
                             <ng-template #header>
             <tr>
+                <th pSortableColumn="dia">
+                    Turno
+                    <p-sortIcon field="dia" />
+                </th>
                 <th pSortableColumn="dia">
                     Dia
                     <p-sortIcon field="dia" />
@@ -75,6 +118,7 @@
         </ng-template>
         <ng-template #body let-tardanza>
             <tr>
+                <td>{{ tardanza.turno }}</td>
                 <td>{{ tardanza.dia }}</td>
                 <td>{{ tardanza.entrada }}</td>
                 <td>{{ tardanza.entradaReal }}</td>

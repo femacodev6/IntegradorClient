@@ -58,6 +58,7 @@ export interface GrupoTardanzas {
     identificacion: string;
     nombre: string;
     apellidos: string;
+    turnos: string[];
     totalAtraso: number;
     tardanzas: TardanzasInngresa[];
     IdBuk: number;
@@ -68,6 +69,7 @@ export interface GrupoTardanzasBuk {
     identificacion: string;
     nombre: string;
     apellidos: string;
+    turnos: string[];
     totalAtraso: number;
     tardanzas: TardanzasInngresa[];
     idBuk: number;

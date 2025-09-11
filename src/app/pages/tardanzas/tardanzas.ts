@@ -24,6 +24,7 @@ import { FloatLabel } from 'primeng/floatlabel';
 import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
 import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
 import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
+import { Chip } from 'primeng/chip';
 
 interface Column {
     field: string;
@@ -35,6 +36,7 @@ interface ExportColumn {
     title: string;
     dataKey: string;
 }
+
 interface GrupoTardanzas {
     identificacion: string;
     nombre: string | undefined;
@@ -42,6 +44,7 @@ interface GrupoTardanzas {
     totalAtraso: number;
     tardanzas: Tardanza[];
 }
+
 @Component({
     selector: 'app-tardanza',
     standalone: true,
@@ -67,16 +70,18 @@ interface GrupoTardanzas {
         DatePickerModule,
         FloatLabel,
         MinutesToFriendlyPipe,
-        HoursToFriendlyPipe
+        HoursToFriendlyPipe,
+        Chip
     ],
     templateUrl: './tardanzas.html',
     providers: [MessageService, TardanzaService, ConfirmationService]
 })
 
-
 export class Tardanzas implements OnInit {
 
-    fechaInicio: Date | null = null;
+    // fechaInicio: Date | null = null;
+    fechaInicio = signal<Date | null>(null);
+
     fechaFin: Date | null = null;
 
     tardanzaDialog: boolean = false;
@@ -100,9 +105,15 @@ export class Tardanzas implements OnInit {
     cols!: Column[];
     expandedRows = {};
 
-    constructor(
-        private tardanzaService: TardanzaService,
-    ) { }
+    // turnoSelected: signal();
+    turnoSelected = signal<string | null>(null);
+
+    constructor
+        (
+            private tardanzaService: TardanzaService,
+            private messageService: MessageService,
+            private confirmationService: ConfirmationService
+        ) { }
 
     groupedTardanzas = computed((): GrupoTardanzas[] => {
         const groups = this.tardanzas().reduce<Record<string, GrupoTardanzas>>((acc, t) => {
@@ -116,8 +127,59 @@ export class Tardanzas implements OnInit {
         return Object.values(groups);
     });
 
+
+    meses: string[] = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    mes = computed((): string => {
+        const fecha = this.fechaInicio();
+        if (fecha == null) return 'Mes';
+        return this.meses[fecha.getMonth()];
+    });
+
+    turnos = computed(() => {
+        const s = new Set<string>();
+        for (const g of this.tardanzasGrupo()) {
+            if (!g?.turnos) continue;
+            for (const t of g.turnos) {
+                if (t != null && t !== '') s.add(t);
+            }
+        }
+        return Array.from(s).sort((a, b) => a.localeCompare(b));
+    });
+
+    tardanzasGrupoFilter = computed(() => {
+        if (!this.turnoSelected()) {
+            return this.tardanzasGrupo()
+        }
+        else {
+            console.log("paso")
+
+            return this.tardanzasGrupo().filter(tg => {
+                return tg.turnos.some(t => {
+                    console.log(t)
+                    return t == this.turnoSelected()
+                })
+            })
+        }
+
+    });
+
     ngOnInit() {
     }
+
+    guardar() {
+        console.log("dasf")
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Successful',
+            detail: 'Products Deleted',
+            life: 3000
+        });
+    }
+
     private formatDate(d: Date | null): string {
         if (!d) return '';
         const y = d.getFullYear();
@@ -127,15 +189,30 @@ export class Tardanzas implements OnInit {
     }
 
     atrazoToBuk(index: number, groupedTardanza: GrupoTardanzasBuk) {
-        this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio).then((data) => {
+        this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio()).then((data) => {
             const item = this.tardanzasGrupo()[index];
             if (!item) return;
             item?.tardanzasBuk?.set(data.ausencia);
-        });
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Exito',
+                detail: 'Total tardanzas traspasadas a Buk',
+                life: 3000
+            });
+        })
+            .catch((e) => {
+                console.error(e);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo traspasar tardanzas a Buk ' + e.error.error,
+                    life: 4000
+                });
+            });
     }
 
     loadDemoData() {
-        const fi = this.formatDate(this.fechaInicio);
+        const fi = this.formatDate(this.fechaInicio());
         const ff = this.formatDate(this.fechaFin);
 
         this.tardanzaService.getTardanzasGrupo(fi, ff).then((data) => {
