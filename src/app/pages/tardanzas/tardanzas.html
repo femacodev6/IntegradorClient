@@ -1,4 +1,3 @@
-<p-toast />
 <h5 class="m-0">Reporte de tardanzas</h5>
 <p-toolbar styleClass="mb-6">
     <ng-template #start>
@@ -11,23 +10,27 @@
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
         <p-button label="Ver tardanzas" severity="info" class="mr-2" (onClick)="loadDemoData()" />
+        @if(isInicioFinMes()==true){
+        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBukVolcar()" />
+        }
     </ng-template>
 </p-toolbar>
 
 <div class="card" [style]="{'padding':'1em'}">
     <div class="mb-2">
-        <p-select [options]="turnos()" [(ngModel)]="turnoSelected" [checkmark]="true" [showClear]="true" placeholder="Selecione un turno" class="w-full md:w-56" />
+        <p-select [options]="turnos()" [(ngModel)]="turnoSelected" [checkmark]="true" [showClear]="true"
+            placeholder="Selecione un turno" class="w-full md:w-56" />
     </div>
 
     <p-table [value]="tardanzasGrupoFilter()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
-        [expandedRowKeys]="expandedRows" showGridlines>
+        [expandedRowKeys]="expandedRows" showGridlines [(selection)]="selectedTardanzas">
 
         <ng-template #header>
             <tr>
                 <th style="width: 5rem"></th>
-                <!-- <th style="width: 3rem">
+                <th style="width: 3rem">
                     <p-tableHeaderCheckbox />
-                </th> -->
+                </th>
                 <th pSortableColumn="identificacion">
                     <div class="flex items-center gap-2">
                         Identificacion
@@ -61,6 +64,9 @@
                 <th>
                     Atrazo Buk Acum. {{mes()}}
                 </th>
+                <th>
+                    Comparacion
+                </th>
             </tr>
         </ng-template>
         <ng-template #body let-groupedTardanza let-expanded="expanded">
@@ -69,9 +75,9 @@
                     <p-button type="button" pRipple [pRowToggler]="groupedTardanza" [text]="true" severity="secondary"
                         [rounded]="true" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
                 </td>
-                <!-- <td style="width: 3rem">
-                    <p-tableCheckbox [value]="tardanza" />
-                </td> -->
+                <td style="width: 3rem">
+                    <p-tableCheckbox [value]="groupedTardanza" />
+                </td>
                 <td>{{ groupedTardanza.identificacion }}</td>
                 <td>{{ groupedTardanza.nombre}}</td>
                 <td>{{ groupedTardanza.apellidos}}</td>
@@ -81,11 +87,12 @@
                 </td>
                 <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
                 <td>{{ groupedTardanza.tardanzasBuk()?.hours | hoursToFriendly }}</td>
+                <td><p-tag [value]="groupedTardanza.estado.nombre" [severity]="groupedTardanza.estado.severity" /></td>
             </tr>
         </ng-template>
         <ng-template #expandedrow let-groupedTardanza let-rowIndex="rowIndex">
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="p-4">
                         <p-table #dt [value]="groupedTardanza.tardanzas" showGridlines="false" [rows]="10"
                             [columns]="cols" [paginator]="false"
@@ -129,14 +136,17 @@
     </p-table>
 </div>
 
-<div class="p-4" style="display: flex; flex-direction: column;">
-    <div style="flex: 1;">
-        <!-- Aquí va tu contenido -->
+@if(isInicioFinMes()==true){
+    <div class="p-4" style="display: flex; flex-direction: column;">
+        <div style="flex: 1;">
+            <!-- Aquí va tu contenido -->
+         
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
+        </div>
     </div>
-    <div style="display: flex; justify-content: flex-end;">
-        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
-    </div>
-</div>
+}
 </td>
 </tr>
 </ng-template>

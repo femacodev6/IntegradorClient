@@ -73,7 +73,7 @@ export interface GrupoTardanzasBuk {
     totalAtraso: number;
     tardanzas: TardanzasInngresa[];
     idBuk: number;
-    tardanzasBuk?: WritableSignal<TardanzasBuk | undefined>;
+    tardanzasBuk?: WritableSignal<TardanzasBuk | null>;
 }
 
 export interface Atrazo {
@@ -86,9 +86,32 @@ export interface Atrazo {
     type_id?: number;
 }
 
+export interface HorasNoTrabajadasRequest {
+    employee_id: number;
+    hours: number;
+    year?: number;
+    month?: number;
+    // type_id se pone en el backend (si lo necesitas en front, agréguelo)
+}
+
 export interface HorasNoTrabajadasResponse {
     message?: string;
     ausencia?: TardanzasBuk;
+}
+
+
+export interface BatchItemResponse {
+    employeeId: number;
+    success: boolean;
+    errorMessage?: string | null;
+    response?: HorasNoTrabajadasResponse | null;
+}
+
+export interface BatchSummary {
+    total: number;
+    succeeded: number;
+    failed: number;
+    items: BatchItemResponse[];
 }
 
 @Injectable()
@@ -104,15 +127,51 @@ export class TardanzaService {
     //     return firstValueFrom(this.http.get<Tardanza[]>(url));
     // }
 
+    // postTardanzasData(groupedTardanza: GrupoTardanzasBuk, fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
+    //     const url = `/api/Tardanzas/TraspasarAtrazoToBuk`;
+    //     const body = {
+    //         year: fechaInicio?.getFullYear(),
+    //         month: (fechaInicio?.getMonth() ?? 0) + 1,
+    //         hours: groupedTardanza.totalAtraso/60,
+    //         employee_id: groupedTardanza.idBuk
+    //     };
+    //     return firstValueFrom(this.http.put<HorasNoTrabajadasResponse>(url, body));
+    // }
+
+    // postTardanzasDataVolcar(groupedTardanza: GrupoTardanzasBuk[], fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
+    //     const url = `/api/Tardanzas/postTardanzasDataVolcar`;
+    //     const body = {
+    //         year: fechaInicio?.getFullYear(),
+    //         month: (fechaInicio?.getMonth() ?? 0) + 1,
+    //         hours: groupedTardanza.totalAtraso/60,
+    //         employee_id: groupedTardanza.idBuk
+    //     };
+    //     return firstValueFrom(this.http.put<HorasNoTrabajadasResponse>(url, body));
+    // }
+
     postTardanzasData(groupedTardanza: GrupoTardanzasBuk, fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
         const url = `/api/Tardanzas/TraspasarAtrazoToBuk`;
         const body = {
             year: fechaInicio?.getFullYear(),
             month: (fechaInicio?.getMonth() ?? 0) + 1,
-            hours: groupedTardanza.totalAtraso/60,
+            hours: groupedTardanza.totalAtraso / 60,
             employee_id: groupedTardanza.idBuk
         };
         return firstValueFrom(this.http.put<HorasNoTrabajadasResponse>(url, body));
+    }
+
+    // Nuevo: batch
+    postTardanzasBatch(groupedList: GrupoTardanzasBuk[], fechaInicio: Date | null): Promise<BatchSummary> {
+        const url = `/api/Tardanzas/postTardanzasDataVolcar`;
+
+        const body: HorasNoTrabajadasRequest[] = groupedList.map(g => ({
+            employee_id: g.idBuk,
+            hours: g.totalAtraso / 60,
+            year: fechaInicio?.getFullYear(),
+            month: (fechaInicio?.getMonth() ?? 0) + 1
+        }));
+
+        return firstValueFrom(this.http.put<BatchSummary>(url, body));
     }
 
     getTardanzasGrupoData(fechaInicio?: string, fechaFin?: string): Promise<GrupoTardanzasBuk[]> {

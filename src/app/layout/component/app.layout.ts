@@ -1,4 +1,4 @@
-import { Component, Renderer2, ViewChild } from '@angular/core';
+import { Component, Renderer2, ViewChild, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -8,11 +8,13 @@ import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { LoadingService } from '../loading/loading.service';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule, ProgressSpinnerModule],
     providers: [MessageService, ConfirmationService],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
         <app-topbar></app-topbar>
@@ -20,12 +22,31 @@ import { ConfirmationService, MessageService } from 'primeng/api';
         <div class="layout-main-container">
             <div class="layout-main">
                 <p-toast />
-                <router-outlet></router-outlet>
+                @if (isLoading()) {
+                <div class="global-loader">
+                    <div class="backdrop"></div>
+                    <div class="spinner-wrap">
+                    <p-progressSpinner></p-progressSpinner>
+                    </div>
+                </div>
+                }
+                <router-outlet>
+                </router-outlet>
             </div>
             <app-footer></app-footer>
         </div>
         <div class="layout-mask animate-fadein"></div>
-    </div> `
+    </div> `,
+    styles: [`
+    .global-loader { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+    .global-loader .backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.25); pointer-events: auto;
+    }
+    .spinner-wrap {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+  `]
 })
 export class AppLayout {
     overlayMenuOpenSubscription: Subscription;
@@ -36,11 +57,16 @@ export class AppLayout {
 
     @ViewChild(AppTopbar) appTopBar!: AppTopbar;
 
+    isLoading!: Signal<boolean>;
+
     constructor(
         public layoutService: LayoutService,
         public renderer: Renderer2,
-        public router: Router
+        public router: Router,
+        private loading: LoadingService
     ) {
+        this.isLoading = this.loading.isLoading;
+
         this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
             if (!this.menuOutsideClickListener) {
                 this.menuOutsideClickListener = this.renderer.listen('document', 'click', (event) => {
@@ -59,6 +85,8 @@ export class AppLayout {
             this.hideMenu();
         });
     }
+
+
 
     isOutsideClicked(event: MouseEvent) {
         const sidebarEl = document.querySelector('.layout-sidebar');

@@ -74,7 +74,7 @@ interface GrupoTardanzas {
         Chip
     ],
     templateUrl: './tardanzas.html',
-    providers: [MessageService, TardanzaService, ConfirmationService]
+    providers: [TardanzaService, ConfirmationService]
 })
 
 export class Tardanzas implements OnInit {
@@ -82,7 +82,31 @@ export class Tardanzas implements OnInit {
     // fechaInicio: Date | null = null;
     fechaInicio = signal<Date | null>(null);
 
-    fechaFin: Date | null = null;
+    fechaFin = signal<Date | null>(null);
+
+    fechaInicioResponse = signal<Date | null>(null);
+
+    fechaFinResponse = signal<Date | null>(null);
+
+    isInicioFinMes = computed<boolean>(() => {
+        const inicio = this.fechaInicioResponse();
+        const fin = this.fechaFinResponse();
+
+        if (!inicio || !fin) return false;
+
+        const mismoMes =
+            inicio.getFullYear() === fin.getFullYear() &&
+            inicio.getMonth() === fin.getMonth();
+
+        if (!mismoMes) return false;
+
+        const primerDiaMes = inicio.getDate() === 1;
+
+        const ultimoDiaMes =
+            fin.getDate() === new Date(fin.getFullYear(), fin.getMonth() + 1, 0).getDate();
+
+        return primerDiaMes && ultimoDiaMes;
+    });
 
     tardanzaDialog: boolean = false;
 
@@ -92,7 +116,10 @@ export class Tardanzas implements OnInit {
 
     tardanza!: Tardanza;
 
-    selectedTardanzas!: Tardanza[] | null;
+    tardanzaGrupo!: GrupoTardanzasBuk;
+
+    selectedTardanzas!: GrupoTardanzasBuk[] | [];
+    // selectedTardanzas!: GrupoTardanzasBuk[] | null;
 
     submitted: boolean = false;
 
@@ -134,7 +161,7 @@ export class Tardanzas implements OnInit {
     ];
 
     mes = computed((): string => {
-        const fecha = this.fechaInicio();
+        const fecha = this.fechaInicioResponse();
         if (fecha == null) return 'Mes';
         return this.meses[fecha.getMonth()];
     });
@@ -150,34 +177,41 @@ export class Tardanzas implements OnInit {
         return Array.from(s).sort((a, b) => a.localeCompare(b));
     });
 
+
+
+    tardanzasGrupoEstado = computed(() => {
+        return this.tardanzasGrupo().map(tar => {
+            if (!this.isInicioFinMes()) {
+                return { ...tar, estado: { nombre: "no aplica", severity: "info" } }
+            }
+            else {
+                const buk = tar.tardanzasBuk?.()
+                if (!buk)
+                    return { ...tar, estado: { nombre: "no hay dato", severity: "warn" } }
+                else {
+                    const bukMinutos = buk.hours * 60
+                    if (bukMinutos == tar.totalAtraso)
+                        return { ...tar, estado: { nombre: "actualizado", severity: "success" } }
+                    return { ...tar, estado: { nombre: "discordante", severity: "danger" } }
+                }
+            }
+        })
+    });
+
     tardanzasGrupoFilter = computed(() => {
         if (!this.turnoSelected()) {
-            return this.tardanzasGrupo()
+            return this.tardanzasGrupoEstado()
         }
         else {
-            console.log("paso")
-
-            return this.tardanzasGrupo().filter(tg => {
+            return this.tardanzasGrupoEstado().filter(tg => {
                 return tg.turnos.some(t => {
-                    console.log(t)
                     return t == this.turnoSelected()
                 })
             })
         }
-
     });
 
     ngOnInit() {
-    }
-
-    guardar() {
-        console.log("dasf")
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Successful',
-            detail: 'Products Deleted',
-            life: 3000
-        });
     }
 
     private formatDate(d: Date | null): string {
@@ -192,7 +226,7 @@ export class Tardanzas implements OnInit {
         this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio()).then((data) => {
             const item = this.tardanzasGrupo()[index];
             if (!item) return;
-            item?.tardanzasBuk?.set(data.ausencia);
+            item?.tardanzasBuk?.set(data.ausencia ?? null);
             this.messageService.add({
                 severity: 'success',
                 summary: 'Exito',
@@ -211,9 +245,61 @@ export class Tardanzas implements OnInit {
             });
     }
 
+    atrazoToBukVolcar() {
+        this.tardanzaService.postTardanzasBatch(this.selectedTardanzas, this.fechaInicio()).then((data) => {
+            const exitosos= data.items.filter(req=>{
+                req.success==true
+            })
+
+            exitosos.forEach(exitoso=>{
+                const index= this.tardanzasGrupo().findIndex(tardanza=>tardanza.idBuk==exitoso.employeeId)
+                const item = this.tardanzasGrupo()[index];
+                if (!item) return;
+                item?.tardanzasBuk?.set(exitoso?.response?.ausencia??null);
+            })
+
+            const erroneos = data.total - data.succeeded
+            let detalle
+            let severidad
+            let sumario
+            if(data.total==data.succeeded){
+                detalle = data.succeeded + 'tardanzas traspasadas a Buk'
+                severidad = 'warn'
+                sumario = 'fallo parcial'
+            }
+            if(erroneos!=data.total && data.total>data.succeeded ){
+                detalle = data.succeeded + 'tardanzas traspasadas a Buk, ' + erroneos + 'tardanzas fallidas'
+                severidad = 'success'
+                sumario = 'exito'
+            }
+            if(erroneos==data.total){
+                detalle = erroneos + 'tardanzas fallidas'
+                severidad = 'danger'
+                sumario = 'fallo'
+            }
+
+            this.messageService.add({
+                severity: severidad,
+                summary: sumario,
+                detail: detalle,
+                life: 3000
+            });
+            console.log(data)
+        })
+            .catch((e) => {
+                console.error(e);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo traspasar el volcado tardanzas a Buk ' + e.error.error,
+                    life: 4000
+                });
+            });
+    }
+
     loadDemoData() {
         const fi = this.formatDate(this.fechaInicio());
-        const ff = this.formatDate(this.fechaFin);
+        const ff = this.formatDate(this.fechaFin());
 
         this.tardanzaService.getTardanzasGrupo(fi, ff).then((data) => {
             const mapped = (data as any[]).map(g => ({
@@ -223,6 +309,12 @@ export class Tardanzas implements OnInit {
             })) as GrupoTardanzasBuk[];
 
             this.tardanzasGrupo.set(mapped);
+
+            const start = this.fechaInicio();
+            const end = this.fechaFin();
+
+            this.fechaInicioResponse.set(start ? new Date(start.getTime()) : null);
+            this.fechaFinResponse.set(end ? new Date(end.getTime()) : null);
         });
 
         this.cols = [
