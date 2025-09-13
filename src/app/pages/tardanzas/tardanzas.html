@@ -1,6 +1,10 @@
 <h5 class="m-0">Reporte de tardanzas</h5>
 <p-toolbar styleClass="mb-6">
     <ng-template #start>
+        <p-button class="mr-2" label="Mes anterior" (onClick)="setMesAnterior()">
+        </p-button>
+        <p-button class="mr-2" label="Este mes" (onClick)="setMesActual()">
+        </p-button>
         <p-floatlabel variant="on" class="mr-2">
             <p-datepicker [(ngModel)]="fechaInicio" />
             <label for="on_label">Fecha Inicio</label>
@@ -10,16 +14,34 @@
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
         <p-button label="Ver tardanzas" severity="info" class="mr-2" (onClick)="loadDemoData()" />
-        @if(isInicioFinMes()==true){
-        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBukVolcar()" />
-        }
+
     </ng-template>
 </p-toolbar>
 
 <div class="card" [style]="{'padding':'1em'}">
     <div class="mb-2">
-        <p-select [options]="turnos()" [(ngModel)]="turnoSelected" [checkmark]="true" [showClear]="true"
-            placeholder="Selecione un turno" class="w-full md:w-56" />
+        <p-select [options]="turnos()" [(ngModel)]="turnoSelected" optionLabel="nombre" optionValue="nombre" [checkmark]="true" [showClear]="true"
+            placeholder="Selecione un turno" class="mr-2 w-full md:w-56">
+            <ng-template let-turno #item>
+                <span class="mr-2">
+                    {{turno.nombre}}
+                </span>
+                <p-badge [value]="turno.cantidad" severity="secondary" badgeSize="small" />
+            </ng-template>
+        </p-select>
+        <p-select [options]="comparacionsCantidad()" [(ngModel)]="comparacionSelected" optionLabel="nombre"
+            optionValue="id" [checkmark]="true" [showClear]="true" placeholder="Selecione una comparación"
+            class="mr-2 w-full md:w-56">
+            <ng-template let-comparacion #item>
+                <p-tag [value]="comparacion.nombre" [severity]="comparacion.severity" class="mr-2" />
+                <p-badge [value]="comparacion.cantidad" severity="secondary" badgeSize="small" />
+            </ng-template>
+        </p-select>
+        <span class="mr-2">{{totalColaboradores()}} colaboradores</span>
+        @if(isInicioFinMes()==true){
+        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBukVolcar()" />
+        <span>{{selectedTardanzas?.length}} seleccionados</span>
+        }
     </div>
 
     <p-table [value]="tardanzasGrupoFilter()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
@@ -65,7 +87,7 @@
                     Atrazo Buk Acum. {{mes()}}
                 </th>
                 <th>
-                    Comparacion
+                    Comparación
                 </th>
             </tr>
         </ng-template>
@@ -87,7 +109,8 @@
                 </td>
                 <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
                 <td>{{ groupedTardanza.tardanzasBuk()?.hours | hoursToFriendly }}</td>
-                <td><p-tag [value]="groupedTardanza.estado.nombre" [severity]="groupedTardanza.estado.severity" /></td>
+                <td><p-tag [value]="groupedTardanza.comparacion.nombre"
+                        [severity]="groupedTardanza.comparacion.severity" /></td>
             </tr>
         </ng-template>
         <ng-template #expandedrow let-groupedTardanza let-rowIndex="rowIndex">
@@ -137,15 +160,15 @@
 </div>
 
 @if(isInicioFinMes()==true){
-    <div class="p-4" style="display: flex; flex-direction: column;">
-        <div style="flex: 1;">
-            <!-- Aquí va tu contenido -->
-         
-        </div>
-        <div style="display: flex; justify-content: flex-end;">
-            <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
-        </div>
+<div class="p-4" style="display: flex; flex-direction: column;">
+    <div style="flex: 1;">
+        <!-- Aquí va tu contenido -->
+
     </div>
+    <div style="display: flex; justify-content: flex-end;">
+        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
+    </div>
+</div>
 }
 </td>
 </tr>

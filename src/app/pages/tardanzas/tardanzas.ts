@@ -25,6 +25,7 @@ import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
 import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
 import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
 import { Chip } from 'primeng/chip';
+import { Badge } from 'primeng/badge';
 
 interface Column {
     field: string;
@@ -71,7 +72,8 @@ interface GrupoTardanzas {
         FloatLabel,
         MinutesToFriendlyPipe,
         HoursToFriendlyPipe,
-        Chip
+        Chip,
+        Badge
     ],
     templateUrl: './tardanzas.html',
     providers: [TardanzaService, ConfirmationService]
@@ -135,6 +137,8 @@ export class Tardanzas implements OnInit {
     // turnoSelected: signal();
     turnoSelected = signal<string | null>(null);
 
+    comparacionSelected = signal<number | null>(null);
+
     constructor
         (
             private tardanzaService: TardanzaService,
@@ -166,50 +170,111 @@ export class Tardanzas implements OnInit {
         return this.meses[fecha.getMonth()];
     });
 
-    turnos = computed(() => {
-        const s = new Set<string>();
-        for (const g of this.tardanzasGrupo()) {
-            if (!g?.turnos) continue;
-            for (const t of g.turnos) {
-                if (t != null && t !== '') s.add(t);
+turnos = computed(() => {
+    const map = new Map<string, number>();
+
+    for (const g of this.tardanzasGrupo()) {
+        if (!g?.turnos) continue;
+        for (const t of g.turnos) {
+            if (t != null && t !== '') {
+                map.set(t, (map.get(t) ?? 0) + 1);
             }
         }
-        return Array.from(s).sort((a, b) => a.localeCompare(b));
-    });
+    }
+
+    return Array.from(map.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([nombre, cantidad]) => ({ nombre, cantidad }));
+});
+
+    // turnos = computed(() => {
+    //     const s = new Set<string>();
+    //     for (const g of this.tardanzasGrupo()) {
+    //         if (!g?.turnos) continue;
+    //         for (const t of g.turnos) {
+    //             if (t != null && t !== '') s.add(t);
+    //         }
+    //     }
+    //     return Array.from(s).sort((a, b) => a.localeCompare(b));
+    // });
+
+    setMesActual() {
+        const hoy = new Date();
+        const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+        this.fechaInicio.set(inicio);
+        this.fechaFin.set(fin);
+    }
+
+    setMesAnterior() {
+        const hoy = new Date();
+        const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+        const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+
+        this.fechaInicio.set(inicio);
+        this.fechaFin.set(fin);
+    }
+
+    comparacions = [
+        { id: 1, nombre: "no aplica", severity: "info" },
+        { id: 2, nombre: "no hay dato", severity: "warn" },
+        { id: 3, nombre: "actualizado", severity: "success" },
+        { id: 4, nombre: "discordante", severity: "danger" }
+    ]
 
 
+    comparacionsCantidad = computed(() => {
+        const comparacionsNew=this.comparacions.map(c=>{
+            return {...c,cantidad:0}
+        })
+        this.tardanzasGrupoEstado().forEach(tf=>{
+            const index = comparacionsNew.findIndex(c=>{
+                return c.id==tf.comparacion?.id
+            }) 
+            comparacionsNew[index].cantidad++
+        })
+        return comparacionsNew
+    })
 
     tardanzasGrupoEstado = computed(() => {
         return this.tardanzasGrupo().map(tar => {
             if (!this.isInicioFinMes()) {
-                return { ...tar, estado: { nombre: "no aplica", severity: "info" } }
+                return { ...tar, comparacion: this.comparacions.find(c => c.id == 1) }
             }
             else {
                 const buk = tar.tardanzasBuk?.()
                 if (!buk)
-                    return { ...tar, estado: { nombre: "no hay dato", severity: "warn" } }
+                    return { ...tar, comparacion: this.comparacions.find(c => c.id == 2) }
                 else {
-                    const bukMinutos = buk.hours * 60
+                    const bukMinutos = Math.round(buk.hours * 60)
                     if (bukMinutos == tar.totalAtraso)
-                        return { ...tar, estado: { nombre: "actualizado", severity: "success" } }
-                    return { ...tar, estado: { nombre: "discordante", severity: "danger" } }
+                        return { ...tar, comparacion: this.comparacions.find(c => c.id == 3) }
+                    return { ...tar, comparacion: this.comparacions.find(c => c.id == 4) }
                 }
             }
         })
     });
-
+    
     tardanzasGrupoFilter = computed(() => {
-        if (!this.turnoSelected()) {
-            return this.tardanzasGrupoEstado()
-        }
-        else {
-            return this.tardanzasGrupoEstado().filter(tg => {
-                return tg.turnos.some(t => {
-                    return t == this.turnoSelected()
-                })
-            })
-        }
+        const all = this.tardanzasGrupoEstado();
+        const turno = this.turnoSelected();
+        const comparacion = this.comparacionSelected();
+
+        return all.filter(tg => {
+            if (turno) {
+                if (!(tg.turnos?.some(t => t === turno))) return false;
+            }
+            if (comparacion) {
+                if (!(tg.comparacion?.id == comparacion)) return false;
+            }
+            return true;
+        });
     });
+
+    totalColaboradores = computed(() => {
+        return this.tardanzasGrupoFilter().length
+    })
 
     ngOnInit() {
     }
@@ -224,7 +289,9 @@ export class Tardanzas implements OnInit {
 
     atrazoToBuk(index: number, groupedTardanza: GrupoTardanzasBuk) {
         this.tardanzaService.postTardanzasData(groupedTardanza, this.fechaInicio()).then((data) => {
-            const item = this.tardanzasGrupo()[index];
+            this.selectedTardanzas = []
+            const indexNew = this.tardanzasGrupo().findIndex(tardanza => tardanza.idBuk == data.ausencia?.employeeId)
+            const item = this.tardanzasGrupo()[indexNew];
             if (!item) return;
             item?.tardanzasBuk?.set(data.ausencia ?? null);
             this.messageService.add({
@@ -247,34 +314,40 @@ export class Tardanzas implements OnInit {
 
     atrazoToBukVolcar() {
         this.tardanzaService.postTardanzasBatch(this.selectedTardanzas, this.fechaInicio()).then((data) => {
-            const exitosos= data.items.filter(req=>{
-                req.success==true
+            this.selectedTardanzas = []
+            const exitosos = data.items.filter(req => {
+                return req.success == true
             })
+            console.log(exitosos);
+            exitosos.forEach(exitoso => {
+                const index = this.tardanzasGrupo().findIndex(tardanza => {
+                    console.log(tardanza.idBuk);
+                    return tardanza.idBuk == exitoso.employeeId
+                })
+                console.log(index);
 
-            exitosos.forEach(exitoso=>{
-                const index= this.tardanzasGrupo().findIndex(tardanza=>tardanza.idBuk==exitoso.employeeId)
                 const item = this.tardanzasGrupo()[index];
                 if (!item) return;
-                item?.tardanzasBuk?.set(exitoso?.response?.ausencia??null);
+                item?.tardanzasBuk?.set(exitoso?.response?.ausencia ?? null);
             })
 
             const erroneos = data.total - data.succeeded
             let detalle
             let severidad
             let sumario
-            if(data.total==data.succeeded){
-                detalle = data.succeeded + 'tardanzas traspasadas a Buk'
+            if (data.total == data.succeeded) {
+                detalle = data.succeeded + ' tardanzas traspasadas a Buk'
                 severidad = 'warn'
                 sumario = 'fallo parcial'
             }
-            if(erroneos!=data.total && data.total>data.succeeded ){
-                detalle = data.succeeded + 'tardanzas traspasadas a Buk, ' + erroneos + 'tardanzas fallidas'
+            if (erroneos != data.total && data.total > data.succeeded) {
+                detalle = data.succeeded + ' tardanzas traspasadas a Buk, ' + erroneos + ' tardanzas fallidas'
                 severidad = 'success'
                 sumario = 'exito'
             }
-            if(erroneos==data.total){
-                detalle = erroneos + 'tardanzas fallidas'
-                severidad = 'danger'
+            if (erroneos == data.total) {
+                detalle = erroneos + ' tardanzas fallidas'
+                severidad = 'error'
                 sumario = 'fallo'
             }
 
