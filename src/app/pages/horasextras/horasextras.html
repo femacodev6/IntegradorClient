@@ -1,4 +1,4 @@
-<h5 class="m-0">Reporte de tardanzas</h5>
+<h5 class="m-0">Reporte de horasExtras</h5>
 <p-toolbar styleClass="mb-6">
     <ng-template #start>
         <p-button class="mr-2" label="Mes anterior" (onClick)="setMesAnterior()">
@@ -13,7 +13,7 @@
             <p-datepicker [(ngModel)]="fechaFin" />
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
-        <p-button label="Ver tardanzas" severity="info" class="mr-2" (onClick)="loadDemoData()" />
+        <p-button label="Ver horasExtras" severity="info" class="mr-2" (onClick)="loadDemoData()" />
 
     </ng-template>
 </p-toolbar>
@@ -22,7 +22,7 @@
     <div class="mb-2 flex items-center justify-between flex-wrap">
         <!-- izquierda: selects y total -->
         <div class="flex items-center flex-wrap gap-2">
-            <p-select [options]="turnos()" [(ngModel)]="turnoSelected" optionLabel="nombre" optionValue="nombre"
+            <!-- <p-select [options]="turnos()" [(ngModel)]="turnoSelected" optionLabel="nombre" optionValue="nombre"
                 [checkmark]="true" [showClear]="true" placeholder="Selecione un turno" class="mr-2 w-full md:w-56">
                 <ng-template let-turno #item>
                     <span class="mr-2">
@@ -39,22 +39,22 @@
                     <p-tag [value]="comparacion.nombre" [severity]="comparacion.severity" class="mr-2" />
                     <p-badge [value]="comparacion.cantidad" severity="secondary" badgeSize="small" />
                 </ng-template>
-            </p-select>
+            </p-select> -->
 
-            <span class="mr-2">{{totalColaboradores()}} colaboradores</span>
+            <!-- <span class="mr-2">{{totalColaboradores()}} colaboradores</span> -->
         </div>
 
         <!-- derecha: botón y contador alineados a la derecha -->
         <div class="flex items-center space-x-2">
             @if(isInicioFinMes()==true){
             <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBukVolcar()" />
-            <span>{{selectedTardanzas?.length || 0}} seleccionados</span>
+            <span>{{selectedHorasExtras?.length || 0}} seleccionados</span>
             }
         </div>
     </div>
 
-    <p-table [value]="tardanzasGrupoFilter()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
-        [expandedRowKeys]="expandedRows" showGridlines [(selection)]="selectedTardanzas">
+    <p-table [value]="horasExtrasGrupo" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
+        [expandedRowKeys]="expandedRows" showGridlines [(selection)]="selectedHorasExtras">
 
         <ng-template #header>
             <tr>
@@ -100,36 +100,36 @@
                 </th>
             </tr>
         </ng-template>
-        <ng-template #body let-groupedTardanza let-expanded="expanded">
+        <ng-template #body let-groupedHorasExtra let-expanded="expanded">
             <tr>
                 <td>
-                    <p-button type="button" pRipple [pRowToggler]="groupedTardanza" [text]="true" severity="secondary"
+                    <p-button type="button" pRipple [pRowToggler]="groupedHorasExtra" [text]="true" severity="secondary"
                         [rounded]="true" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
                 </td>
                 <td style="width: 3rem">
-                    <p-tableCheckbox [value]="groupedTardanza" />
+                    <p-tableCheckbox [value]="groupedHorasExtra" />
                 </td>
-                <td>{{ groupedTardanza.identificacion }}</td>
-                <td>{{ groupedTardanza.nombre}}</td>
-                <td>{{ groupedTardanza.apellidos}}</td>
-                <td> @for (turno of groupedTardanza.turnos; track $index) {
+                <td>{{ groupedHorasExtra.identificacion }}</td>
+                <td>{{ groupedHorasExtra.nombre}}</td>
+                <td>{{ groupedHorasExtra.apellidos}}</td>
+                <td> @for (turno of groupedHorasExtra.turnos; track $index) {
                     <p-chip [label]="turno" />
                     }
                 </td>
-                <td>{{ groupedTardanza.totalAtraso | minutesToFriendly }}</td>
-                <td>{{ groupedTardanza.tardanzasBuk()?.hours | hoursToFriendly }}</td>
-                <td><p-tag [value]="groupedTardanza.comparacion.nombre"
-                        [severity]="groupedTardanza.comparacion.severity" /></td>
+                <td>{{ groupedHorasExtra.totalAtraso | minutesToFriendly }}</td>
+                <td>{{ groupedHorasExtra.horasExtrasBuk()?.hours | hoursToFriendly }}</td>
+                <td><p-tag [value]="groupedHorasExtra.comparacion.nombre"
+                        [severity]="groupedHorasExtra.comparacion.severity" /></td>
             </tr>
         </ng-template>
-        <ng-template #expandedrow let-groupedTardanza let-rowIndex="rowIndex">
+        <ng-template #expandedrow let-groupedHorasExtra let-rowIndex="rowIndex">
             <tr>
                 <td colspan="8">
                     <div class="p-4">
-                        <p-table #dt [value]="groupedTardanza.tardanzas" showGridlines="false" [rows]="10"
+                        <p-table #dt [value]="groupedHorasExtra.horasExtras" showGridlines="false" [rows]="10"
                             [columns]="cols" [paginator]="false"
                             [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
-                            [tableStyle]="{ 'min-width': '100%' }" [(selection)]="selectedTardanzas" [rowHover]="true"
+                            [tableStyle]="{ 'min-width': '100%' }" [(selection)]="selectedHorasExtras" [rowHover]="true"
                             dataKey="id">
                             <ng-template #header>
             <tr>
@@ -155,13 +155,13 @@
                 </th>
             </tr>
         </ng-template>
-        <ng-template #body let-tardanza>
+        <ng-template #body let-horasExtra>
             <tr>
-                <td>{{ tardanza.turno }}</td>
-                <td>{{ tardanza.dia }}</td>
-                <td>{{ tardanza.entrada }}</td>
-                <td>{{ tardanza.entradaReal }}</td>
-                <td>{{ tardanza.atraso | minutesToFriendly }} </td>
+                <td>{{ horasExtra.turno }}</td>
+                <td>{{ horasExtra.dia }}</td>
+                <td>{{ horasExtra.entrada }}</td>
+                <td>{{ horasExtra.entradaReal }}</td>
+                <td>{{ horasExtra.atraso | minutesToFriendly }} </td>
 
             </tr>
         </ng-template>
@@ -175,7 +175,7 @@
 
     </div>
     <div style="display: flex; justify-content: flex-end;">
-        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedTardanza)" />
+        <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="atrazoToBuk(rowIndex,groupedHorasExtra)" />
     </div>
 </div>
 }

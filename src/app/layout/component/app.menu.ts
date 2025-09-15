@@ -31,14 +31,19 @@ export class AppMenu {
                     //     routerLink: ['http://192.168.1.50:10050/Licencias/ObtenerPermisosvista']
                     // },
                     {
+                        label: 'Permisos',
+                        icon: 'pi pi-fw pi-tablet',
+                        routerLink: ['/pages/permiso']
+                    },
+                    {
                         label: 'Tardanzas',
                         icon: 'pi pi-fw pi-hourglass',
                         routerLink: ['/pages/tardanza']
                     },
                     {
-                        label: 'Permisos',
-                        icon: 'pi pi-fw pi-tablet',
-                        routerLink: ['/pages/permiso']
+                        label: 'Horas extras',
+                        icon: 'pi pi-fw pi-hourglass',
+                        routerLink: ['/pages/horasextra']
                     },
                 ]
             },

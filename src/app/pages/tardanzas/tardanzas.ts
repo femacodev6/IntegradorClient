@@ -170,33 +170,7 @@ export class Tardanzas implements OnInit {
         return this.meses[fecha.getMonth()];
     });
 
-turnos = computed(() => {
-    const map = new Map<string, number>();
 
-    for (const g of this.tardanzasGrupo()) {
-        if (!g?.turnos) continue;
-        for (const t of g.turnos) {
-            if (t != null && t !== '') {
-                map.set(t, (map.get(t) ?? 0) + 1);
-            }
-        }
-    }
-
-    return Array.from(map.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([nombre, cantidad]) => ({ nombre, cantidad }));
-});
-
-    // turnos = computed(() => {
-    //     const s = new Set<string>();
-    //     for (const g of this.tardanzasGrupo()) {
-    //         if (!g?.turnos) continue;
-    //         for (const t of g.turnos) {
-    //             if (t != null && t !== '') s.add(t);
-    //         }
-    //     }
-    //     return Array.from(s).sort((a, b) => a.localeCompare(b));
-    // });
 
     setMesActual() {
         const hoy = new Date();
@@ -223,19 +197,59 @@ turnos = computed(() => {
         { id: 4, nombre: "discordante", severity: "danger" }
     ]
 
+    // 1) Un único computed que devuelve las tres vistas
+    tardanzasGrupoFilters = computed(() => {
+        const all = this.tardanzasGrupoEstado();
+        const turno = this.turnoSelected();
+        const comparacion = this.comparacionSelected();
 
+        const byTurno: typeof all = [];
+        const byComparacion: typeof all = [];
+        const both: typeof all = [];
+
+        for (const tg of all) {
+            const hasTurno = !turno || tg.turnos?.some(t => t === turno);
+            const hasComparacion = !comparacion || tg.comparacion?.id == comparacion;
+
+            if (hasTurno) byTurno.push(tg);
+            if (hasComparacion) byComparacion.push(tg);
+            if (hasTurno && hasComparacion) both.push(tg);
+        }
+
+        return { all, byTurno, byComparacion, both };
+    });
+
+    // 2) Reutilizar el resultado para exponer los filtros individuales (muy baratos)
+    tardanzasGrupoFilter = computed(() => this.tardanzasGrupoFilters().both);
+    tardanzasGrupoFilterTurno = computed(() => this.tardanzasGrupoFilters().byTurno);
+    tardanzasGrupoFilterComparacion = computed(() => this.tardanzasGrupoFilters().byComparacion);
+
+    // 3) turnos — contar usando Map, recorrido único sobre los turnos relevantes
+    turnos = computed(() => {
+        const map = new Map<string, number>();
+        for (const g of this.tardanzasGrupoFilterComparacion()) {
+            if (!g?.turnos) continue;
+            for (const t of g.turnos) {
+                if (t != null && t !== '') {
+                    map.set(t, (map.get(t) ?? 0) + 1);
+                }
+            }
+        }
+
+        return Array.from(map.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([nombre, cantidad]) => ({ nombre, cantidad }));
+    });
+
+    // 4) comparacionsCantidad — construir un mapa de conteos y mapear comparacions (O(n + m))
     comparacionsCantidad = computed(() => {
-        const comparacionsNew=this.comparacions.map(c=>{
-            return {...c,cantidad:0}
-        })
-        this.tardanzasGrupoEstado().forEach(tf=>{
-            const index = comparacionsNew.findIndex(c=>{
-                return c.id==tf.comparacion?.id
-            }) 
-            comparacionsNew[index].cantidad++
-        })
-        return comparacionsNew
-    })
+        const counts = new Map<any, number>();
+        for (const tf of this.tardanzasGrupoFilterTurno()) {
+            const id = tf.comparacion?.id;
+            if (id != null) counts.set(id, (counts.get(id) ?? 0) + 1);
+        }
+        return this.comparacions.map(c => ({ ...c, cantidad: counts.get(c.id) ?? 0 }));
+    });
 
     tardanzasGrupoEstado = computed(() => {
         return this.tardanzasGrupo().map(tar => {
@@ -255,22 +269,7 @@ turnos = computed(() => {
             }
         })
     });
-    
-    tardanzasGrupoFilter = computed(() => {
-        const all = this.tardanzasGrupoEstado();
-        const turno = this.turnoSelected();
-        const comparacion = this.comparacionSelected();
 
-        return all.filter(tg => {
-            if (turno) {
-                if (!(tg.turnos?.some(t => t === turno))) return false;
-            }
-            if (comparacion) {
-                if (!(tg.comparacion?.id == comparacion)) return false;
-            }
-            return true;
-        });
-    });
 
     totalColaboradores = computed(() => {
         return this.tardanzasGrupoFilter().length
@@ -296,8 +295,8 @@ turnos = computed(() => {
             item?.tardanzasBuk?.set(data.ausencia ?? null);
             this.messageService.add({
                 severity: 'success',
-                summary: 'Exito',
-                detail: 'Total tardanzas traspasadas a Buk',
+                summary: 'Éxito',
+                detail: '1 tardanza traspasadas a Buk',
                 life: 3000
             });
         })
@@ -306,7 +305,7 @@ turnos = computed(() => {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'No se pudo traspasar tardanzas a Buk ' + e.error.error,
+                    detail: 'No se pudo traspasar tardanza a Buk ' + e.error.error,
                     life: 4000
                 });
             });
@@ -337,18 +336,18 @@ turnos = computed(() => {
             let sumario
             if (data.total == data.succeeded) {
                 detalle = data.succeeded + ' tardanzas traspasadas a Buk'
-                severidad = 'warn'
-                sumario = 'fallo parcial'
+                severidad = 'success'
+                sumario = 'Éxito total'
             }
             if (erroneos != data.total && data.total > data.succeeded) {
                 detalle = data.succeeded + ' tardanzas traspasadas a Buk, ' + erroneos + ' tardanzas fallidas'
-                severidad = 'success'
-                sumario = 'exito'
+                severidad = 'warn'
+                sumario = 'Éxito parcial'
             }
             if (erroneos == data.total) {
                 detalle = erroneos + ' tardanzas fallidas'
                 severidad = 'error'
-                sumario = 'fallo'
+                sumario = 'Fallo total'
             }
 
             this.messageService.add({
