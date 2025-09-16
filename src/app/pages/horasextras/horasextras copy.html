@@ -1,40 +1,3 @@
-<style>
-  .feriado {
-    background-color: #ff8585;
-}
-  .gris {
-    background-color: #5a5a5a;
-    color: aliceblue;
-    font-size: 15px;
-}
-.border-gris {
-  border: 2px solid #303030;
-}
-  .rojo {
-    background-color: #b94343;
-    color: aliceblue;
-    font-size: 15px;
-}
-.border-rojo {
-  border: 2px solid #b52214;
-}
-  .azul {
-    background-color: #438eb9;
-    color: aliceblue;
-    font-size: 15px;
-  }
-  .verde {
-    background-color: #8fc74a;
-    color: beige;
-    font-size: 15px;
-  }
-  .border-azul {
-    border: 2px solid #438eb9;
-  }
-  .border-verde {
-    border: 2px solid #8fc74a;
-  }
-</style>
 <h5 class="m-0">Reporte de horasExtras</h5>
 <p-toolbar styleClass="mb-6">
     <ng-template #start>
@@ -90,7 +53,7 @@
         </div> -->
     </div>
 
-    <p-table [value]="horasExtrasGrupo()" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
+    <p-table [value]="horasExtrasGrupo" dataKey="identificacion" [tableStyle]="{ 'min-width': '60rem' }"
         [expandedRowKeys]="expandedRows" showGridlines [(selection)]="selectedHorasExtras">
 
         <ng-template #header>
@@ -101,7 +64,7 @@
                 </th>
                 <th pSortableColumn="identificacion">
                     <div class="flex items-center gap-2">
-                        Identifi.
+                        Identificacion
                         <p-sortIcon field="identificacion" />
                     </div>
                 </th>
@@ -117,53 +80,23 @@
                         <p-sortIcon field="apellidos" />
                     </div>
                 </th>
-                <th class="rojo" pSortableColumn="descartadas">
+                <th pSortableColumn="turnos">
                     <div class="flex items-center gap-2">
-                        Desc.
-                        <p-sortIcon field="descartadas" />
+                        Turnos
+                        <p-sortIcon field="turnos" />
                     </div>
                 </th>
-                <th class="gris" pSortableColumn="paraCompensar">
+                <th pSortableColumn="totalAtraso">
                     <div class="flex items-center gap-2">
-                        Comp.
-                        <p-sortIcon field="paraCompensar" />
+                        Atrazo Inngresa
+                        <p-sortIcon field="totalAtraso" />
                     </div>
                 </th>
-                <th class="azul" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        25 %
-                        <p-sortIcon field="25" />
-                    </div>
+                <th>
+                    Atrazo Buk Acum. {{mes()}}
                 </th>
-                <th class="azul" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        35 %
-                        <p-sortIcon field="25" />
-                    </div>
-                </th>
-                <th class="azul" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        100 %
-                        <p-sortIcon field="25" />
-                    </div>
-                </th>
-                <th class="verde" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        25 %
-                        <p-sortIcon field="25" />
-                    </div>
-                </th>
-                <th class="verde" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        35 %
-                        <p-sortIcon field="25" />
-                    </div>
-                </th>
-                <th class="verde" pSortableColumn="25">
-                    <div class="flex items-center gap-2">
-                        100 %
-                        <p-sortIcon field="25" />
-                    </div>
+                <th>
+                    Comparación
                 </th>
             </tr>
         </ng-template>
@@ -179,20 +112,12 @@
                 <td>{{ groupedHorasExtra.identificacion }}</td>
                 <td>{{ groupedHorasExtra.nombre}}</td>
                 <td>{{ groupedHorasExtra.apellidos}}</td>
-                <td class="border-rojo">{{ groupedHorasExtra.totales.descartadas | timeToFriendly}}</td>
-                <td class="border-gris">{{ groupedHorasExtra.totales.paraCompensar | timeToFriendly}}</td>
-                <td class="border-azul">{{ groupedHorasExtra.totales.pagadas25 | timeToFriendly }}</td>
-                <td class="border-azul">{{ groupedHorasExtra.totales.pagadas35 | timeToFriendly  }}</td>
-                <td class="border-azul">{{ groupedHorasExtra.totales.pagadas100 | timeToFriendly  }}</td>
-                <td class="border-verde">{{ groupedHorasExtra.pagadas25Buk | hoursToFriendlyVacum }}</td>
-                <td class="border-verde">{{ groupedHorasExtra.pagadas35Buk | hoursToFriendlyVacum }}</td>
-                <td class="border-verde">{{ groupedHorasExtra.pagadas100Buk | hoursToFriendlyVacum }}</td>
             
             </tr>
         </ng-template>
-        <ng-template #expandedrow let-groupedHorasExtra let-rowIndex="rowIndex">
+        <!-- <ng-template #expandedrow let-groupedHorasExtra let-rowIndex="rowIndex">
             <tr>
-                <td colspan="13">
+                <td colspan="8">
                     <div class="p-4">
                         <p-table #dt [value]="groupedHorasExtra.horasExtras" showGridlines="false" [rows]="10"
                             [columns]="cols" [paginator]="false"
@@ -202,44 +127,34 @@
                             <ng-template #header>
             <tr>
                 <th pSortableColumn="dia">
+                    Turno
+                    <p-sortIcon field="dia" />
+                </th>
+                <th pSortableColumn="dia">
                     Dia
                     <p-sortIcon field="dia" />
                 </th>
-                <th class="rojo" pSortableColumn="entrada">
-                    Desc.
+                <th pSortableColumn="entrada">
+                    Entrada
                     <p-sortIcon field="entrada" />
                 </th>
-                <th class="gris" pSortableColumn="entrada_real">
-                    Comp.
+                <th pSortableColumn="entrada_real">
+                    Entrada real
                     <p-sortIcon field="entrada_real" />
                 </th>
-                <th class="azul" pSortableColumn="atraso">
-                    25%
-                    <p-sortIcon field="atraso" />
-                </th>
-                <th class="azul" pSortableColumn="atraso">
-                    35%
-                    <p-sortIcon field="atraso" />
-                </th>
-                <th class="azul" pSortableColumn="atraso">
-                    100%
-                    <p-sortIcon field="atraso" />
-                </th>
                 <th pSortableColumn="atraso">
-                    Obs.
+                    Atraso
                     <p-sortIcon field="atraso" />
                 </th>
             </tr>
         </ng-template>
         <ng-template #body let-horasExtra>
             <tr>
-                <td [class]="isHolidayOrSunday(horasExtra.dia)?'feriado':''">{{ horasExtra.dia }}</td>
-                <td class="border-rojo">{{ horasExtra.revision.descartadas | timeToFriendly }}</td>
-                <td class="border-gris">{{ horasExtra.revision.paraCompensar | timeToFriendly }}</td>
-                <td class="border-azul">{{ horasExtra.revision.pagadas25 | timeToFriendly }}</td>
-                <td class="border-azul">{{ horasExtra.revision.pagadas35 | timeToFriendly }}</td>
-                <td class="border-azul">{{ horasExtra.revision.pagadas100 | timeToFriendly }}</td>
-                <td>{{ horasExtra.revision.observaciones }}</td>
+                <td>{{ horasExtra.turno }}</td>
+                <td>{{ horasExtra.dia }}</td>
+                <td>{{ horasExtra.entrada }}</td>
+                <td>{{ horasExtra.entradaReal }}</td>
+                <td>{{ horasExtra.atraso | minutesToFriendly }} </td>
 
             </tr>
         </ng-template>
@@ -258,6 +173,6 @@
 }
 </td>
 </tr>
-</ng-template>
+</ng-template> -->
 </p-table>
 </div>

@@ -18,12 +18,14 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { HorasExtrasInngresaBuk, HorasExtrasBuk, HorasExtraService } from '../service/horasExtra.service';
+import { HorasExtrasInngresaBuk, HorasExtrasBuk, HorasExtraService,Holidays2025,Holiday  } from '../service/horasextra.service';
 import { DatePickerModule } from 'primeng/datepicker';
 import { FloatLabel } from 'primeng/floatlabel';
 import { TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
 import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
+import { TimeToFriendlyPipe } from '../../pipes/time-to-friendly';
 import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
+import { HoursToFriendlyVacumPipe } from '../../pipes/hours-to-friendly-vacum';
 import { Chip } from 'primeng/chip';
 import { Badge } from 'primeng/badge';
 
@@ -64,7 +66,9 @@ interface ExportColumn {
         DatePickerModule,
         FloatLabel,
         MinutesToFriendlyPipe,
+        HoursToFriendlyVacumPipe,
         HoursToFriendlyPipe,
+        TimeToFriendlyPipe,
         Chip,
         Badge
     ],
@@ -82,6 +86,45 @@ export class HorasExtras implements OnInit {
     fechaInicioResponse = signal<Date | null>(null);
 
     fechaFinResponse = signal<Date | null>(null);
+
+    holidays2025 = Holidays2025
+
+toLocalDate(input: Date | string): Date {
+  if (input instanceof Date) {
+    // crear nueva Date en midnight local con la misma Y/M/D
+    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+  }
+
+  if (typeof input === 'string') {
+    // si viene en formato ISO date-only "YYYY-MM-DD", parsear manualmente como local
+    const m = input.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      const y = Number(m[1]);
+      const month = Number(m[2]) - 1;
+      const day = Number(m[3]);
+      return new Date(y, month, day);
+    }
+
+    // otros strings (incluye timestamps), construir y normalizar
+    const dt = new Date(input);
+    return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  }
+
+  throw new Error('Invalid date input');
+}
+
+isHolidayOrSunday(input: Date | string, holidays: Holiday[] = Holidays2025): boolean {
+  const d = this.toLocalDate(input);
+  if (isNaN(d.getTime())) return false;
+  if (d.getDay() === 0) return true; // domingo = 0
+
+  return holidays.some(h => {
+    const hd = this.toLocalDate(h.date);
+    return hd.getFullYear() === d.getFullYear()
+        && hd.getMonth() === d.getMonth()
+        && hd.getDate() === d.getDate();
+  });
+}
 
     isInicioFinMes = computed<boolean>(() => {
         const inicio = this.fechaInicioResponse();
@@ -102,6 +145,10 @@ export class HorasExtras implements OnInit {
 
         return primerDiaMes && ultimoDiaMes;
     });
+
+    getHorasExtra(horasExtrasBuk: any, typeId: number): number {
+        return horasExtrasBuk().find((he: any) => he.typeId === typeId)?.hours ?? 0;
+    }
 
     horasExtraDialog: boolean = false;
 
@@ -128,9 +175,9 @@ export class HorasExtras implements OnInit {
     expandedRows = {};
 
     // turnoSelected: signal();
-    turnoSelected = signal<string | null>(null);
+    // turnoSelected = signal<string | null>(null);
 
-    comparacionSelected = signal<number | null>(null);
+    // comparacionSelected = signal<number | null>(null);
 
     constructor
         (
@@ -367,10 +414,11 @@ export class HorasExtras implements OnInit {
         const ff = this.formatDate(this.fechaFin());
 
         this.horasExtraService.getHorasExtrasGrupo(fi, ff).then((data) => {
+
             const mapped = (data as any[]).map(g => ({
                 ...g,
                 // si el backend ya manda un array en g.horasExtrasBuk lo usamos, si no, lo inicializamos vacio
-                horasExtrasBuk: signal<HorasExtrasBuk | undefined>(g.horasExtrasBuk ?? [])
+                horasExtrasBuk: signal<HorasExtrasBuk | []>(g.horasExtrasBuk ?? [])
             })) as HorasExtrasInngresaBuk[];
 
             this.horasExtrasGrupo.set(mapped);
