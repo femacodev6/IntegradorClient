@@ -4,74 +4,4568 @@ import { firstValueFrom } from 'rxjs';
 import { WritableSignal } from '@angular/core';
 
 export interface PermisosModelos {
-  hash: string;
+  hash: string | null;
   inicio: string;
   fin: string;
   obs: string;
   allday: boolean;
   identificacion: string;
-  code: string;
-  idMotivo: string;
-  idMotivoBuk: string;
+  code: string | null;
+  idMotivo: string | null;
+  idMotivoBuk: string | null;
   motivo: string;
   tipoDePermiso: string;
   fullname: string;
-  momentoRevision: string;
-  paid: string;
+  momentoRevision: string | null;
+  paid: string | null;
   dni: number;
-  idBuk?: string;
+  idBuk?: string | null;
+}
+
+// export interface TodosBuk {
+//   id?: number | null;
+//   start_date: string;
+//   end_date: string;
+//   days_count: string;
+//   day_percent: string;
+//   contribution_days: string;
+//   workday_stage: string;
+//   employee_id: string;
+//   permission_type_id: string | null;
+//   paid: string | null;
+//   fullname: string;
+//   justification: string | null;
+//   hash?: string | null;
+//   dni?: number | null;
+//   tipo_buk: string; // "permiso", "licencia", "inasistencia"
+// }
+
+export interface PermisosBaseBuk {
+  paid?: boolean | null;
+  permissionTypeId?: number | null;
+  permissionTypeCode?: string | null;
+  timeMeasure?: number | null;
+  startTime?: string | null; // TimeSpan -> formato "HH:mm:ss" esperado
+  endTime?: string | null;   // TimeSpan -> formato "HH:mm:ss" esperado
+}
+
+export interface InasistenciasBaseBuk {
+  absenceTypeId?: number | null;
+  absenceTypeCode?: string | null;
+}
+
+export interface LicenciasBaseBuk {
+  licenceTypeId?: number | null;
+  format?: string | null;
+  type?: string | null;
+  motivo?: string | null;
+  medicRut?: string | null;
+  licenceTypeCode?: string | null;
+  licenceNumber?: string | null;
+  medicName?: string | null;
+  customAttributes?: Record<string, unknown> | null; // JObject
 }
 
 export interface TodosBuk {
-  id?: number;
-  start_date: string;
-  end_date: string;
-  days_count: string;
-  day_percent: string;
-  contribution_days: string;
-  workday_stage: string;
-  employee_id: string;
-  permission_type_id: string;
-  paid: string;
+  id?: number | null;
+  startDate?: string | null;           // DateTime -> ISO string
+  endDate?: string | null;             // DateTime -> ISO string
+  daysCount?: number | null;
+  dayPercent?: number | null;
+  contributionDays?: number | null;
+  workdayStage?: string | null;
+  applicationDate?: string | null;     // DateTime -> ISO string
+  applicationEndDate?: string | null; // DateTime -> ISO string
+  justification?: string | null;        // aunque en C# es private, está marcado JsonProperty
+  employeeId?: number | null;
+  status?: string | null;
+  createdAt?: string | null;           // DateTime -> ISO string
+  updatedAt?: string | null;           // DateTime -> ISO string
+
+  dni: number;
+  hash?: string | null;
   fullname: string;
-  justification: string;
-  hash: string;
-  dni?: number;
-  tipo_buk: string; // "permiso", "licencia", "inasistencia"
+
+  permiso?: PermisosBaseBuk | null;
+  licencia?: LicenciasBaseBuk | null;
+  inasistencia?: InasistenciasBaseBuk | null;
 }
 
 export interface UnionTodosBukInntegra {
-  todosBuk?: TodosBuk;       // puede ser null
-  permiso?: PermisosModelos; // puede ser null
+  todosBuk?: TodosBuk | null;       // puede ser null
+  permiso?: PermisosModelos | null; // puede ser null
 }
 
 @Injectable()
 export class PermisoService {
 
-    getPermisosData(fechaInicio?: string, fechaFin?: string): Promise<UnionTodosBukInntegra[]> {
-        const fi = fechaInicio;
-        const ff = fechaFin;
-        if (!fi || !ff) {
-            return Promise.reject('Selecciona fecha inicio y fecha fin');
+  getPermisosData(fechaInicio?: string, fechaFin?: string): Promise<UnionTodosBukInntegra[]> {
+    const fi = fechaInicio;
+    const ff = fechaFin;
+    if (!fi || !ff) {
+      return Promise.reject('Selecciona fecha inicio y fecha fin');
+    }
+    const url = `/api/Permisos/ObtenerPermisosProcesados?fechaInicio=${fi}&fechaFin=${ff}`;
+    return firstValueFrom(this.http.get<UnionTodosBukInntegra[]>(url));
+  }
+
+  // postPermisosData(groupedPermiso: GrupoPermisosBuk, fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
+  //     const url = `/api/Permisos/TraspasarAtrazoToBuk`;
+  //     const body = {
+  //         year: fechaInicio?.getFullYear(),
+  //         month: (fechaInicio?.getMonth() ?? 0) + 1,
+  //         hours: groupedPermiso.totalAtraso/60,
+  //         employee_id: groupedPermiso.idBuk
+  //     };
+  //     return firstValueFrom(this.http.put<HorasNoTrabajadasResponse>(url, body));
+  // }
+
+  constructor(private http: HttpClient) { }
+
+  getPermisos(fechaInicio: string, fechaFin: string): Promise<UnionTodosBukInntegra[]> {
+    // return this.getPermisosData(fechaInicio+"T00:00", fechaFin+"T23:59");
+    return Promise.resolve<UnionTodosBukInntegra[]>(
+      [
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": true,
+              "permissionTypeId": 18,
+              "permissionTypeCode": "permiso_por_hora_con_goce",
+              "timeMeasure": 1,
+              "startTime": "08:00:00",
+              "endTime": "10:29:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24120,
+            "startDate": "2025-09-02T00:00:00",
+            "endDate": "2025-09-02T00:00:00",
+            "daysCount": 0.3104,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-02T00:00:00",
+            "applicationEndDate": "2025-09-02T00:00:00",
+            "employeeId": 6674,
+            "status": "approved",
+            "createdAt": "2025-09-04T11:45:09.626-05:00",
+            "updatedAt": "2025-09-04T11:45:09.626-05:00",
+            "dni": 72321899,
+            "hash": null,
+            "fullname": "EVELYN  CACERES CHUQUIRIMAY",
+            "justification": ""
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 14,
+              "permissionTypeCode": "permiso",
+              "timeMeasure": 0,
+              "startTime": null,
+              "endTime": null
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24196,
+            "startDate": "2025-09-01T00:00:00",
+            "endDate": "2025-09-01T00:00:00",
+            "daysCount": 1,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-01T00:00:00",
+            "applicationEndDate": "2025-09-01T00:00:00",
+            "employeeId": 921,
+            "status": "approved",
+            "createdAt": "2025-09-05T10:31:55.162-05:00",
+            "updatedAt": "2025-09-05T10:31:55.162-05:00",
+            "dni": 48499006,
+            "hash": null,
+            "fullname": "ANTHONI JAIME PACOMPIA MITTA",
+            "justification": ""
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": null,
+            "licencia": {
+              "licenceTypeId": 13,
+              "format": "electronica",
+              "type": "licence",
+              "motivo": "accidente_comun",
+              "medicRut": null,
+              "licenceTypeCode": "licencia",
+              "licenceNumber": null,
+              "medicName": null,
+              "customAttributes": null
+            },
+            "inasistencia": null,
+            "id": 24079,
+            "startDate": "2025-08-22T00:00:00",
+            "endDate": "2025-09-03T00:00:00",
+            "daysCount": 13,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-08-22T00:00:00",
+            "applicationEndDate": "2025-09-03T00:00:00",
+            "employeeId": 1998,
+            "status": "approved",
+            "createdAt": "2025-09-03T17:55:41.139-05:00",
+            "updatedAt": "2025-09-03T17:55:41.139-05:00",
+            "dni": 72951290,
+            "hash": null,
+            "fullname": "JUAN JUNIOR VILCA VARGAS",
+            "justification": ""
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": null,
+            "licencia": null,
+            "inasistencia": {
+              "absenceTypeId": 16,
+              "absenceTypeCode": "inasistencia"
+            },
+            "id": 23921,
+            "startDate": "2025-09-03T00:00:00",
+            "endDate": "2025-09-03T00:00:00",
+            "daysCount": 0.0625,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-03T00:00:00",
+            "applicationEndDate": "2025-09-03T00:00:00",
+            "employeeId": 906,
+            "status": "approved",
+            "createdAt": "2025-09-03T16:56:02.706-05:00",
+            "updatedAt": "2025-09-03T16:56:02.706-05:00",
+            "dni": -10,
+            "hash": null,
+            "fullname": "No se encontró el apellido",
+            "justification": null
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": null,
+            "licencia": null,
+            "inasistencia": {
+              "absenceTypeId": 95,
+              "absenceTypeCode": "falta_injustificadacese"
+            },
+            "id": 24336,
+            "startDate": "2025-09-01T00:00:00",
+            "endDate": "2025-09-01T00:00:00",
+            "daysCount": 1,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-01T00:00:00",
+            "applicationEndDate": "2025-09-01T00:00:00",
+            "employeeId": 7113,
+            "status": "approved",
+            "createdAt": "2025-09-08T10:20:20.724-05:00",
+            "updatedAt": "2025-09-08T10:20:20.724-05:00",
+            "dni": 41801966,
+            "hash": null,
+            "fullname": "EFRAIN ANTONIO MERMA CRUZ",
+            "justification": ""
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": null,
+            "licencia": null,
+            "inasistencia": {
+              "absenceTypeId": 95,
+              "absenceTypeCode": "falta_injustificadacese"
+            },
+            "id": 24473,
+            "startDate": "2025-09-01T00:00:00",
+            "endDate": "2025-09-10T00:00:00",
+            "daysCount": 10,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-01T00:00:00",
+            "applicationEndDate": "2025-09-10T00:00:00",
+            "employeeId": 6939,
+            "status": "approved",
+            "createdAt": "2025-09-10T12:23:34.603-05:00",
+            "updatedAt": "2025-09-10T12:23:34.603-05:00",
+            "dni": 76234317,
+            "hash": null,
+            "fullname": "LUIS ENRIQUE CHAVEZ CRUZ",
+            "justification": ""
+          },
+          "permiso": null
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 14,
+              "permissionTypeCode": "permiso",
+              "timeMeasure": 0,
+              "startTime": null,
+              "endTime": null
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24130,
+            "startDate": "2025-09-02T00:00:00",
+            "endDate": "2025-09-02T00:00:00",
+            "daysCount": 1,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-02T00:00:00",
+            "applicationEndDate": "2025-09-02T00:00:00",
+            "employeeId": 1400,
+            "status": "approved",
+            "createdAt": "2025-09-04T16:33:57.7-05:00",
+            "updatedAt": "2025-09-04T16:33:57.7-05:00",
+            "dni": 72393396,
+            "hash": "c1439f013843daa770da6ee4f0f60cbf83060850",
+            "fullname": "CATHERINE DARIA MAQUE HURTADO",
+            "justification": "c1439f013843daa770da6ee4f0f60cbf83060850"
+          },
+          "permiso": {
+            "hash": "c1439f013843daa770da6ee4f0f60cbf83060850",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": true,
+            "identificacion": "72393396",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "CATHERINE DARIA MAQUE HURTADO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1400"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 17,
+              "permissionTypeCode": "permiso_por_hora",
+              "timeMeasure": 1,
+              "startTime": "09:00:00",
+              "endTime": "10:30:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24198,
+            "startDate": "2025-09-01T00:00:00",
+            "endDate": "2025-09-01T00:00:00",
+            "daysCount": 0.1875,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-01T00:00:00",
+            "applicationEndDate": "2025-09-01T00:00:00",
+            "employeeId": 7044,
+            "status": "approved",
+            "createdAt": "2025-09-05T11:24:18.681-05:00",
+            "updatedAt": "2025-09-05T11:24:18.681-05:00",
+            "dni": 42280957,
+            "hash": "968fd5fe1871c3b3b15f6c58a57c6a9bd8331901",
+            "fullname": "JAIME ORLANDO DIAZ CALLO",
+            "justification": "968fd5fe1871c3b3b15f6c58a57c6a9bd8331901"
+          },
+          "permiso": {
+            "hash": "968fd5fe1871c3b3b15f6c58a57c6a9bd8331901",
+            "inicio": "2025-09-01T09:00:00",
+            "fin": "2025-09-01T10:30:00",
+            "obs": "prueba",
+            "allday": false,
+            "identificacion": "42280957",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JAIME ORLANDO DIAZ CALLO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7044"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": true,
+              "permissionTypeId": 18,
+              "permissionTypeCode": "permiso_por_hora_con_goce",
+              "timeMeasure": 1,
+              "startTime": "08:00:00",
+              "endTime": "10:00:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24202,
+            "startDate": "2025-09-02T00:00:00",
+            "endDate": "2025-09-02T00:00:00",
+            "daysCount": 0.25,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-02T00:00:00",
+            "applicationEndDate": "2025-09-02T00:00:00",
+            "employeeId": 7044,
+            "status": "approved",
+            "createdAt": "2025-09-05T13:55:50.484-05:00",
+            "updatedAt": "2025-09-05T13:55:50.484-05:00",
+            "dni": 42280957,
+            "hash": "6c9168ef619f402f23972a5aa20c71660e044a71",
+            "fullname": "JAIME ORLANDO DIAZ CALLO",
+            "justification": "6c9168ef619f402f23972a5aa20c71660e044a71"
+          },
+          "permiso": {
+            "hash": "6c9168ef619f402f23972a5aa20c71660e044a71",
+            "inicio": "2025-09-02T08:00:00",
+            "fin": "2025-09-02T10:00:00",
+            "obs": "prueba",
+            "allday": false,
+            "identificacion": "42280957",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO CON GOCE",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "JAIME ORLANDO DIAZ CALLO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7044"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 17,
+              "permissionTypeCode": "permiso_por_hora",
+              "timeMeasure": 1,
+              "startTime": "08:00:00",
+              "endTime": "13:37:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24301,
+            "startDate": "2025-09-01T00:00:00",
+            "endDate": "2025-09-01T00:00:00",
+            "daysCount": 0.7021,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-01T00:00:00",
+            "applicationEndDate": "2025-09-01T00:00:00",
+            "employeeId": 6440,
+            "status": "approved",
+            "createdAt": "2025-09-08T08:54:15.971-05:00",
+            "updatedAt": "2025-09-08T08:54:15.971-05:00",
+            "dni": 71405769,
+            "hash": "ad6d6e8aad42bc37b154000d26cb01011700db00",
+            "fullname": "JOEL JASON ATAMARI AGUILAR",
+            "justification": "ad6d6e8aad42bc37b154000d26cb01011700db00"
+          },
+          "permiso": {
+            "hash": "ad6d6e8aad42bc37b154000d26cb01011700db00",
+            "inicio": "2025-09-01T08:00:00",
+            "fin": "2025-09-01T13:37:00",
+            "obs": "AUTORIZA SR JAIME - POR TEMA PERSONAL",
+            "allday": false,
+            "identificacion": "71405769",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JOEL JASON ATAMARI AGUILAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6440"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": true,
+              "permissionTypeId": 129,
+              "permissionTypeCode": "compensacion_por_horas_femaco",
+              "timeMeasure": 1,
+              "startTime": "16:41:00",
+              "endTime": "17:30:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24339,
+            "startDate": "2025-09-03T00:00:00",
+            "endDate": "2025-09-03T00:00:00",
+            "daysCount": 0.1021,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-03T00:00:00",
+            "applicationEndDate": "2025-09-03T00:00:00",
+            "employeeId": 3285,
+            "status": "approved",
+            "createdAt": "2025-09-08T11:28:42.245-05:00",
+            "updatedAt": "2025-09-08T11:28:42.245-05:00",
+            "dni": 43846199,
+            "hash": "2ff5ff9b025241f44e0152010edd08ff52ec4cd5",
+            "fullname": "VERÓNICA FABIOLA MIRANDA HUAMAN",
+            "justification": "2ff5ff9b025241f44e0152010edd08ff52ec4cd5"
+          },
+          "permiso": {
+            "hash": "2ff5ff9b025241f44e0152010edd08ff52ec4cd5",
+            "inicio": "2025-09-03T16:41:00",
+            "fin": "2025-09-03T17:30:00",
+            "obs": "AUTORIZA CINTHYA",
+            "allday": false,
+            "identificacion": "43846199",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "VERÓNICA FABIOLA MIRANDA HUAMAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3285"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": true,
+              "permissionTypeId": 129,
+              "permissionTypeCode": "compensacion_por_horas_femaco",
+              "timeMeasure": 1,
+              "startTime": "16:34:00",
+              "endTime": "17:30:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24372,
+            "startDate": "2025-09-04T00:00:00",
+            "endDate": "2025-09-04T00:00:00",
+            "daysCount": 0.1167,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-04T00:00:00",
+            "applicationEndDate": "2025-09-04T00:00:00",
+            "employeeId": 876,
+            "status": "approved",
+            "createdAt": "2025-09-09T10:24:13.273-05:00",
+            "updatedAt": "2025-09-09T10:24:13.273-05:00",
+            "dni": 29366911,
+            "hash": "2864ae6976fe3d14a8b36090c832816ea1498a66",
+            "fullname": "JUANA NOEMI VALENCIA BORJA",
+            "justification": "2864ae6976fe3d14a8b36090c832816ea1498a66"
+          },
+          "permiso": {
+            "hash": "2864ae6976fe3d14a8b36090c832816ea1498a66",
+            "inicio": "2025-09-04T16:34:00",
+            "fin": "2025-09-04T17:30:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "29366911",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUANA NOEMI VALENCIA BORJA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "876"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 17,
+              "permissionTypeCode": "permiso_por_hora",
+              "timeMeasure": 1,
+              "startTime": "07:30:00",
+              "endTime": "10:51:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24475,
+            "startDate": "2025-09-08T00:00:00",
+            "endDate": "2025-09-08T00:00:00",
+            "daysCount": 0.4188,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-08T00:00:00",
+            "applicationEndDate": "2025-09-08T00:00:00",
+            "employeeId": 1017,
+            "status": "approved",
+            "createdAt": "2025-09-10T17:05:53.947-05:00",
+            "updatedAt": "2025-09-10T17:05:53.947-05:00",
+            "dni": 44068821,
+            "hash": "d60ad1ca04c8b67228a6917921068b9ad1e8dc70",
+            "fullname": "OSCAR ALBERTO CORNEJO GRANJA",
+            "justification": "d60ad1ca04c8b67228a6917921068b9ad1e8dc70"
+          },
+          "permiso": {
+            "hash": "d60ad1ca04c8b67228a6917921068b9ad1e8dc70",
+            "inicio": "2025-09-08T07:30:00",
+            "fin": "2025-09-08T10:51:00",
+            "obs": "AUTORIZA ELIANA",
+            "allday": false,
+            "identificacion": "44068821",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "OSCAR ALBERTO CORNEJO GRANJA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1017"
+          }
+        },
+        {
+          "todosBuk": {
+            "permiso": {
+              "paid": false,
+              "permissionTypeId": 17,
+              "permissionTypeCode": "permiso_por_hora",
+              "timeMeasure": 1,
+              "startTime": "21:00:00",
+              "endTime": "22:00:00"
+            },
+            "licencia": null,
+            "inasistencia": null,
+            "id": 24576,
+            "startDate": "2025-09-06T00:00:00",
+            "endDate": "2025-09-06T00:00:00",
+            "daysCount": 0.125,
+            "dayPercent": 1,
+            "contributionDays": 0,
+            "workdayStage": "full_working_day",
+            "applicationDate": "2025-09-06T00:00:00",
+            "applicationEndDate": "2025-09-06T00:00:00",
+            "employeeId": 907,
+            "status": "approved",
+            "createdAt": "2025-09-13T11:39:29.654-05:00",
+            "updatedAt": "2025-09-13T11:39:29.654-05:00",
+            "dni": 73249440,
+            "hash": "dc89abd2a8ac3f3a6605c5a0aa9c47af24810c54",
+            "fullname": "JOSE ANTONIO LIMASCCA RODRIGUEZ",
+            "justification": "dc89abd2a8ac3f3a6605c5a0aa9c47af24810c54"
+          },
+          "permiso": {
+            "hash": "dc89abd2a8ac3f3a6605c5a0aa9c47af24810c54",
+            "inicio": "2025-09-06T21:00:00",
+            "fin": "2025-09-06T22:00:00",
+            "obs": "AUTORIZA JHON MAYTA",
+            "allday": false,
+            "identificacion": "73249440",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JOSE ANTONIO LIMASCCA RODRIGUEZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "907"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7fe167f708b32ad512be1c2082842071007b6866",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": true,
+            "identificacion": "29690589",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "RUDY MICAELA PINEDA MARROQUIN",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "889"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "73271db4389fe9a3d52ee16d65c08d46164aeb85",
+            "inicio": "2025-09-15T07:30:00",
+            "fin": "2025-09-15T08:23:00",
+            "obs": "AUTORIZA ELIANA",
+            "allday": false,
+            "identificacion": "29690589",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "RUDY MICAELA PINEDA MARROQUIN",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "889"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "075c58138156eb79ce7b332ac19280df6d510605",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "POR COMPENSAR AUTORIZA JESUS",
+            "allday": true,
+            "identificacion": "30583877",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "ASUNTO LUIS FERNANDEZ MOLLO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "901"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "8c0e84214c6f4884781682ee2db597da4572d08e",
+            "inicio": "2025-09-17T07:30:00",
+            "fin": "2025-09-17T07:48:00",
+            "obs": "AUTORIZA ELIANA",
+            "allday": false,
+            "identificacion": "40754079",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JORGE LUIS YANQUE PARI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "887"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "f8f4814ddeb6d5e92634f096f9427cbbd7c1106c",
+            "inicio": "2025-09-12T15:18:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "40938428",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JULIAN  SARCCO TACCA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "916"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b2f2b6774fe76bc0991958b201116a7e4b53f4b9",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-04T00:00:00",
+            "obs": "AUTORIZA SR RAUL ",
+            "allday": true,
+            "identificacion": "41447698",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "MARIA DEL RAMIREZ SALAS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1215"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ebc18cae2040fa135fe43a29fe18278529be08bb",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "41801966",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "EFRAIN ANTONIO MERMA CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7113"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "68d7a49fc9b976b2ecdbf90e8123d6da536ba031",
+            "inicio": "2025-09-15T08:00:00",
+            "fin": "2025-09-15T08:15:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "41941158",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "GLADYS  HUALLPA MERMA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7046"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "432ac06dbfa8b7fd2a784592dd385b8b354d1203",
+            "inicio": "2025-09-06T13:06:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "42008724",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "KATTY LUCIA CONDORI MAMANI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4114"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "0f49f83625967326aa6107de2720295fd68b7711",
+            "inicio": "2025-09-13T13:18:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "42008724",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "KATTY LUCIA CONDORI MAMANI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4114"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e7cf2f9c97943e2ac4adf9dee8e955b39efa95f4",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "VINO A VIA A REGULARIZAR PENDIENTES",
+            "allday": true,
+            "identificacion": "43411322",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ALONSO JOVE CHIPANA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "969"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "61f58425961a30b034b7a8720306a41015fb31bb",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "AUTORIZA AREA COMERCIAL",
+            "allday": true,
+            "identificacion": "43411322",
+            "code": null,
+            "idMotivo": "7",
+            "idMotivoBuk": null,
+            "motivo": "01 - S.P. SANCIÓN DISCIPLINARIA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ALONSO JOVE CHIPANA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "969"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "726adb921505f155e410b108a5fe840007e83a1e",
+            "inicio": "2025-09-06T13:17:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "43846199",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "VERÓNICA FABIOLA MIRANDA HUAMAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3285"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ffc1adb1a83b9008bb10ac684517fc55fe2cf514",
+            "inicio": "2025-09-13T13:30:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "43846199",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "VERÓNICA FABIOLA MIRANDA HUAMAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3285"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "bb2c109426ee11fedc21d2ed97a73bf87494400d",
+            "inicio": "2025-09-06T00:00:00",
+            "fin": "2025-09-25T00:00:00",
+            "obs": "CERTIFICADO DE NACIDO VIVO\r\nDIAS: 20 DIAS (nacimiento prematuro)",
+            "allday": true,
+            "identificacion": "43971012",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "28 - S.I. DÍAS LICENCIA POR PATERNIDAD",
+            "tipoDePermiso": "paternidad",
+            "fullname": "EDWIN GONZALO CUAYLA MOLLESACA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5109"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d4b12b52323899eaf698cb9700e31241d5b2e22c",
+            "inicio": "2025-09-08T07:00:00",
+            "fin": "2025-09-08T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": true,
+            "identificacion": "44507695",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "MIGUEL JOSE HACHAHUI SOTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4778"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d4c05765bd6474cb7d450414bd242c4c0088a4f6",
+            "inicio": "2025-09-11T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "CITT: A-080-00016631-25\r\nDÍAS: 02 DÍAS",
+            "allday": true,
+            "identificacion": "44507695",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "20 - S.I. ENFERM/ACCIDENTE (20 PRIMEROS DÍAS)",
+            "tipoDePermiso": "descanso_medico",
+            "fullname": "MIGUEL JOSE HACHAHUI SOTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4778"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b4049d56d4ce0c9130db3d62fa462fe4a4c0bf49",
+            "inicio": "2025-09-12T16:19:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "AUTORIZA JESUS . PRICSILA",
+            "allday": false,
+            "identificacion": "45210811",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CELESTINO  CCOYORI AYMA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1045"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "044b6c137c34684ceb7ab895481b026249720d96",
+            "inicio": "2025-09-06T00:00:00",
+            "fin": "2025-09-06T00:00:00",
+            "obs": "INDICA MOSIE",
+            "allday": true,
+            "identificacion": "45504717",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "CESAR AUGUSTO PALOMINO CORRALES",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6707"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "37f405e0d149dbb4d5ad80e587bc62fa06265e9e",
+            "inicio": "2025-09-12T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "45694910",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JULIO CESAR CONDORI HANCCO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4180"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c5e6774bffc52edea90edfe3f5d70d742dd9b6a3",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-30T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "45705507",
+            "code": null,
+            "idMotivo": "3",
+            "idMotivoBuk": null,
+            "motivo": "23 - S.I. DESCANSO VACACIONAL",
+            "tipoDePermiso": "",
+            "fullname": "WALTER MAGNO ARAPA MAMANI",
+            "momentoRevision": null,
+            "paid": "",
+            "dni": 0,
+            "idBuk": "914"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c067b69918236f77570529a30f43348ad2c6f901",
+            "inicio": "2025-09-11T15:51:00",
+            "fin": "2025-09-11T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "46167044",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "LUIS HERNAN MUÑOZ QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7551"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e1a679bd9ba2171ba38245b56178dd847d51ec99",
+            "inicio": "2025-09-12T16:11:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "POR COMPENSAR AUTORIZA OPERACIONES",
+            "allday": false,
+            "identificacion": "46167044",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "LUIS HERNAN MUÑOZ QUISPE",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7551"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "43f14785107005e5014c21038415e258a7a5baa2",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-30T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "46419388",
+            "code": null,
+            "idMotivo": "3",
+            "idMotivoBuk": null,
+            "motivo": "23 - S.I. DESCANSO VACACIONAL",
+            "tipoDePermiso": "",
+            "fullname": "JOSE DANIEL RAMOS CHIPANA",
+            "momentoRevision": null,
+            "paid": "",
+            "dni": 0,
+            "idBuk": "1027"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a5ebe03a61af276326302a5138e504179f27bb63",
+            "inicio": "2025-09-03T16:12:00",
+            "fin": "2025-09-03T17:00:00",
+            "obs": "AUTORIZA JESUS - PRICSILA",
+            "allday": false,
+            "identificacion": "46459165",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "FREDY EDUARDO AROTAYPE QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5739"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "911ed2f540228cbc03d8b544cfa5e85fe2de292b",
+            "inicio": "2025-09-13T07:00:00",
+            "fin": "2025-09-13T09:07:00",
+            "obs": "",
+            "allday": false,
+            "identificacion": "46459165",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "FREDY EDUARDO AROTAYPE QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5739"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e53163e382034ce8ae798d57cee864f15d4030c8",
+            "inicio": "2025-09-06T09:58:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA CINTHYA",
+            "allday": false,
+            "identificacion": "46712174",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "JAVIER ENRIQUE DOMINGUEZ CUEVA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3518"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "2ca54d82f8be917cb9abf677df7016b24f776417",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA CINTHYA",
+            "allday": true,
+            "identificacion": "46712174",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JAVIER ENRIQUE DOMINGUEZ CUEVA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "3518"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "17e4c64f6d6f24237dcd053bdb857d86a0970ac4",
+            "inicio": "2025-09-13T13:19:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "46712174",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JAVIER ENRIQUE DOMINGUEZ CUEVA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3518"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ff67aaddc1cc7ed0dbbd409e3acbf5e0e0ca8547",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "47533828",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "FRANCK WILLIAM VARGAS REATEGUI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "972"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4d3c4ceac4c503baf49747d734118afe160b044b",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "INDICA MARIA Y HECTOR COMERCIAL",
+            "allday": true,
+            "identificacion": "47573730",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE LUIS PEREZ SALAZAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7005"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "42797468bc59d0f26f2d684c0c07f0d41bde8cad",
+            "inicio": "2025-09-12T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "INDICA MARIA COMERCIAL",
+            "allday": true,
+            "identificacion": "47573730",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE LUIS PEREZ SALAZAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7005"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "054322edd14d53748d58b79e072123781ad43c89",
+            "inicio": "2025-09-17T00:00:00",
+            "fin": "2025-09-17T00:00:00",
+            "obs": "INDICA MARIA COMERCIAL",
+            "allday": true,
+            "identificacion": "47573730",
+            "code": null,
+            "idMotivo": "7",
+            "idMotivoBuk": null,
+            "motivo": "01 - S.P. SANCIÓN DISCIPLINARIA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE LUIS PEREZ SALAZAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7005"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "1bff10ca1e9743c39dc90a14fb165f6b6e9dcb4b",
+            "inicio": "2025-09-16T00:00:00",
+            "fin": "2025-09-16T00:00:00",
+            "obs": "INDICA MARIA COMERCIAL",
+            "allday": true,
+            "identificacion": "47573730",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE LUIS PEREZ SALAZAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7005"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "9a00232783c1205dace57dc108ca45ef976e83fa",
+            "inicio": "2025-09-05T10:42:00",
+            "fin": "2025-09-05T13:30:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "47644021",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "LILEY DANITZA CONDORI CHAHUAYHUA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1011"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "bffaf35feeca1aa78605bb88df197cef365650dc",
+            "inicio": "2025-09-06T07:30:00",
+            "fin": "2025-09-06T08:46:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "47644021",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "LILEY DANITZA CONDORI CHAHUAYHUA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1011"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "1ee8f09d604f48a1b77805fc96399fb3a44c3f9e",
+            "inicio": "2025-09-08T07:00:00",
+            "fin": "2025-09-08T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": true,
+            "identificacion": "47712101",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "MARCELINO  QUISPE MARCA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5242"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "44dfef06a029cbae6fccfaaef2c58b8c5a474e2a",
+            "inicio": "2025-09-12T16:07:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "AUTORIZA JESUS . PRICSILA",
+            "allday": false,
+            "identificacion": "47823459",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "BLADEMIR LINO QUISPE CCARI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "952"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "70adedc4f8d8ed55c9d85e996285a28cbd9ea927",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "INDICA RENE \r\n",
+            "allday": true,
+            "identificacion": "47950021",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "FREDY  TINUCO QUISPE",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "984"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "25cdbc5fa6ab25577da926c9e3a9de8f186b9ee2",
+            "inicio": "2025-09-10T15:50:00",
+            "fin": "2025-09-10T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "47950021",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "FREDY  TINUCO QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "984"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4092bd0419e3025832b0a018a96af9bf31ab7a65",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "48060664",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "HELBERT FREDY NIFLA MAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1855"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e270dec7b2d9c84f0fd1b5ccce86095193d7a7e8",
+            "inicio": "2025-09-12T14:01:00",
+            "fin": "2025-09-12T18:00:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "48232608",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JESUS YELTSIN CABANA VALDERRAMA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "977"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "306063dc6f543957679a379f5a8e125512e73cf1",
+            "inicio": "2025-09-16T14:02:00",
+            "fin": "2025-09-16T18:00:00",
+            "obs": "CASO GOYO CORDOVA",
+            "allday": false,
+            "identificacion": "48232608",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "JESUS YELTSIN CABANA VALDERRAMA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "977"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "20c2bd9687a182928f860e8b73e8ea98cb4dcf2f",
+            "inicio": "2025-09-06T14:32:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "48280142",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CINTHYA MARIBEL AQUIMA CRUZ",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3120"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "58db4ae55da92fef3d5816b74214ca0b3afbc51b",
+            "inicio": "2025-09-13T13:56:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "48280142",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CINTHYA MARIBEL AQUIMA CRUZ",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3120"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d98e3770aa6f2e0ffc1e6bf982b9a7ea9c98888c",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "CITT: A-697-00017787-25\r\nDÍAS: 01 DÍAS",
+            "allday": true,
+            "identificacion": "48314001",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "20 - S.I. ENFERM/ACCIDENTE (20 PRIMEROS DÍAS)",
+            "tipoDePermiso": "descanso_medico",
+            "fullname": "PAULO CESAR ROSAS GUILLEN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6039"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "490591e551ae41ed3f83958c8b50cae5a5fbdbe3",
+            "inicio": "2025-09-05T16:47:00",
+            "fin": "2025-09-05T17:00:00",
+            "obs": "AUTORIZA JESUS - PRICSILA",
+            "allday": false,
+            "identificacion": "48314001",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "PAULO CESAR ROSAS GUILLEN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6039"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "366079bc4580724053d3164fbc023165b0f3d108",
+            "inicio": "2025-09-11T16:51:00",
+            "fin": "2025-09-11T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "48314001",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "PAULO CESAR ROSAS GUILLEN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6039"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "9d779bd98b9a263da6d050e5d2c509de7779d724",
+            "inicio": "2025-09-06T00:00:00",
+            "fin": "2025-09-06T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "48409306",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JUAN LUIS PACCO HUARSOCCA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "924"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "dcbf8fb8377ec0f900bda039c753fba327377fee",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "POR COMPENSAR AUTORIZA JESUS",
+            "allday": true,
+            "identificacion": "48499006",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "ANTHONI JAIME PACOMPIA MITTA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "921"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a04e11d2cfc9b4045f21750a8a4dde45d7bfd2aa",
+            "inicio": "2025-09-08T07:00:00",
+            "fin": "2025-09-08T17:00:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": true,
+            "identificacion": "48499006",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ANTHONI JAIME PACOMPIA MITTA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "921"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "3fe0782ac1a49eca6d8e01f33c1901dd203db0bc",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-30T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "48617434",
+            "code": null,
+            "idMotivo": "3",
+            "idMotivoBuk": null,
+            "motivo": "23 - S.I. DESCANSO VACACIONAL",
+            "tipoDePermiso": "",
+            "fullname": "WILVER  OBLITAS PEREZ",
+            "momentoRevision": null,
+            "paid": "",
+            "dni": 0,
+            "idBuk": "925"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "fa7be308917bd6f55f1a77517293c91e6f5e56c2",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "PENDIENTE DESCANSO MEDICO INDICA QUE ESTA MAL DE SALUD",
+            "allday": true,
+            "identificacion": "48950852",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "WILY  HIRPAHUANCA YUPANQUI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6640"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "f3782e7870f6fe56852bbff9b9eba75bfcc66345",
+            "inicio": "2025-09-10T16:52:00",
+            "fin": "2025-09-10T17:30:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "48950852",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "WILY  HIRPAHUANCA YUPANQUI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6640"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "865da81b4898de6cbc77a08c884d336589116e77",
+            "inicio": "2025-09-15T07:30:00",
+            "fin": "2025-09-15T07:46:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "48950852",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "WILY  HIRPAHUANCA YUPANQUI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6640"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d0e4b76e0798e48f64c97ea7095c92e2ed10424c",
+            "inicio": "2025-09-12T17:17:00",
+            "fin": "2025-09-12T17:30:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "48950852",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "WILY  HIRPAHUANCA YUPANQUI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6640"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7df655f28ce235ce595ff76f3992b5e4185a96ee",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "60062815",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "SAMIR KENNY CCASA PUMA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7248"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "2ef4c852c2b2604d4aa74598afe13cbdbd344cff",
+            "inicio": "2025-09-12T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "60062815",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "SAMIR KENNY CCASA PUMA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7248"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "078d9326ffbe60867e2fb8e11ed65f166d53691c",
+            "inicio": "2025-09-11T00:00:00",
+            "fin": "2025-09-11T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "60062815",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "SAMIR KENNY CCASA PUMA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7248"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "07cc611ebc83441dbddbbd63054994e8187913dd",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "60062815",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "SAMIR KENNY CCASA PUMA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7248"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "59d7eb79bfec7a1d60f05e46d44dc60cfc0899ba",
+            "inicio": "2025-09-09T07:00:00",
+            "fin": "2025-09-09T07:34:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": false,
+            "identificacion": "60062815",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SAMIR KENNY CCASA PUMA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7248"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "9969a4d7ab6a71aaf8642e85a34594655549840a",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "INDICA PRICSILA OPERACIONES",
+            "allday": true,
+            "identificacion": "60245759",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "ALEXANDER JUNIOR HALANOCA RAMOS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1408"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "cd6c9115fc824740eb4455c4f01afa253612976e",
+            "inicio": "2025-09-12T07:00:00",
+            "fin": "2025-09-12T09:00:00",
+            "obs": "AUTORIZA OPERACIONES - HIZO REPARTO LOCAL",
+            "allday": false,
+            "identificacion": "60245759",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ALEXANDER JUNIOR HALANOCA RAMOS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1408"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "5ca8de7d21ffc4563b13a9081ca581803bd8ebed",
+            "inicio": "2025-09-11T00:00:00",
+            "fin": "2025-09-11T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "61258280",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "BRAYAN SAMIR HUAHUACCAPA CCAHUA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7041"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "bf08441d47951c81a878d464a6782bcabca11735",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "PENDIENTE DESCANSO MEDICO ",
+            "allday": true,
+            "identificacion": "62551453",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "PERCY  JAQQUEHUA DELGADO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "5441"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ac3da86f4e60d6eb9297bd23300099fa8a818fec",
+            "inicio": "2025-09-15T15:35:00",
+            "fin": "2025-09-15T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "62551453",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "PERCY  JAQQUEHUA DELGADO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5441"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "96edf9761c95bb6827ca0b83515e33b54615c263",
+            "inicio": "2025-09-01T07:30:00",
+            "fin": "2025-09-01T11:23:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "63564922",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUAN CARLOS CUTIPA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "2245"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "79ec58f3bd29d4088103b0c1a88b4b05b13f529a",
+            "inicio": "2025-09-04T07:30:00",
+            "fin": "2025-09-04T07:48:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "63564922",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUAN CARLOS CUTIPA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "2245"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "38226fd559a172a1b580d3ea7fd2499af32c2fe4",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "AUTORIZA OPERACIONES TRABAJO DOMINGO 10 DE AGOSTO",
+            "allday": true,
+            "identificacion": "63564922",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "JUAN CARLOS CUTIPA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "2245"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "1be81263fbf42213799c74e77788f616749df368",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "AUTORIZA OPERACIONES TRABAJO DOMINGO 17 DE AGOSTO",
+            "allday": true,
+            "identificacion": "63564922",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "JUAN CARLOS CUTIPA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "2245"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7f83b5cbecc574c1b0015823c289cdb26f3743d4",
+            "inicio": "2025-09-10T14:18:00",
+            "fin": "2025-09-10T15:27:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "70102322",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JAVIER ROMARIO SAGUANAYA CABANA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "909"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a11fc37cc2b8741c965cb548a428c9e29393c3a4",
+            "inicio": "2025-09-12T15:33:00",
+            "fin": "2025-09-12T17:30:00",
+            "obs": "AUOTORIZA RENE",
+            "allday": false,
+            "identificacion": "70102322",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JAVIER ROMARIO SAGUANAYA CABANA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "909"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "8d06184630367b47fd670b123566b3e4071f9570",
+            "inicio": "2025-09-16T14:02:00",
+            "fin": "2025-09-16T17:00:00",
+            "obs": "CASO GOYO CORDOVA",
+            "allday": false,
+            "identificacion": "70182448",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "JOSE SANTOS BAUTISTA PINTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "974"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "3cb7ef4ac24f2cc09c36840ea88ab86617338c86",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "AUTORIZACIÓN SR. RAUL",
+            "allday": true,
+            "identificacion": "70296660",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "MELANIE NAHALIEL TACO FLOREZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1421"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "5bfac9e5928606ce89398cf909abaef7f233ce9d",
+            "inicio": "2025-09-08T07:30:00",
+            "fin": "2025-09-08T09:45:00",
+            "obs": "POR COMPENSAR AUTORIZA CATHY COMERCIAL",
+            "allday": false,
+            "identificacion": "70326247",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "GIANCARLO ANDRES CHALCO ORTEGA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4378"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a7a5ba4d15ba27ceee93af1e6791da8769fb9feb",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "INDICA MOSIE",
+            "allday": true,
+            "identificacion": "70375781",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KEVIN CESAR HUILLCAHUAMAN QUISPE",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7214"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "325c8c8acefa14be859d37d3945d8780585c736d",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "70375781",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KEVIN CESAR HUILLCAHUAMAN QUISPE",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7214"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "2bc58d60f62e612641911371cf72ff1e3b880943",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "70376988",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "ADAN JOSE MOZO HOLGADO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "884"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "64c9a1b52ad07b2b4e9b187fc6d5223f4f6ca5c8",
+            "inicio": "2025-09-10T16:34:00",
+            "fin": "2025-09-10T17:30:00",
+            "obs": "AUTORIZA CATHY COMERCIAL",
+            "allday": false,
+            "identificacion": "70391302",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "GABRIEL ADRIAN LIMACHE CAYETANO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3452"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "047f75d69fd8b7b9b335c0310bc39d38c36c6dab",
+            "inicio": "2025-09-15T13:00:00",
+            "fin": "2025-09-15T17:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": false,
+            "identificacion": "70422992",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSE MANUEL PONCE APAZA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7416"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "450f1ca2863f0ad3c79f5d0ff1bb4682f8ef8f60",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA RENE, PENDIENTE DESCANSO MEDICO",
+            "allday": true,
+            "identificacion": "70555315",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "HUGO JOSE FLORES CERVANTES",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7452"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c067c78c478e27e61d9bee57a8491538be84c66b",
+            "inicio": "2025-09-03T16:45:00",
+            "fin": "2025-09-03T17:30:00",
+            "obs": "AUTORIZA JESUS - PRICSILA",
+            "allday": false,
+            "identificacion": "70666970",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE FABRICIO MEDINA BELTRAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "8375d1823ba521635d5cdc866bff2a6875e0b2a5",
+            "inicio": "2025-09-05T17:20:00",
+            "fin": "2025-09-05T17:30:00",
+            "obs": "AUTORIZA JESUS - PRICSILA",
+            "allday": false,
+            "identificacion": "70666970",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE FABRICIO MEDINA BELTRAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c95b37add5c8e2ab2210891973084cb899dc7400",
+            "inicio": "2025-09-09T17:14:00",
+            "fin": "2025-09-09T17:30:00",
+            "obs": "AUTORIZA JESUS - PRICSILA",
+            "allday": false,
+            "identificacion": "70666970",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE FABRICIO MEDINA BELTRAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b175137da9cc78a2592115e2aa62f444b50d91e4",
+            "inicio": "2025-09-11T17:20:00",
+            "fin": "2025-09-11T17:30:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "70666970",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE FABRICIO MEDINA BELTRAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "54a63f0fa8bb96074561aa886069fd6c956fd238",
+            "inicio": "2025-09-15T17:25:00",
+            "fin": "2025-09-15T17:30:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "70666970",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE FABRICIO MEDINA BELTRAN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "cb9d95bb3ee297e482d688cc7ac2fca8265795db",
+            "inicio": "2025-09-06T14:51:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA SR ALEXANDER",
+            "allday": false,
+            "identificacion": "71317383",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "DIEGO JESUS AGUILAR BAUTISTA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5308"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "9d620b2d27cf5c7957f634213201c2affbc7fbe9",
+            "inicio": "2025-09-13T13:08:00",
+            "fin": "2025-09-13T14:30:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "71901043",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "RUTH BRENDA FONSECA CALCIN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1040"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "98609f0228cdb4df28129590f6e69bcbcc9e9270",
+            "inicio": "2025-09-15T16:02:00",
+            "fin": "2025-09-15T17:00:00",
+            "obs": "AUTORIZA CINTHYA",
+            "allday": false,
+            "identificacion": "71901043",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "RUTH BRENDA FONSECA CALCIN",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1040"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "6b32acd556b392039050a6551d14180f7805f863",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "71961428",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ERWIN EDISON CCASA HUALLPA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4711"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "96cad881c4ed6db0a7afceec03c4a835775682ac",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "71961428",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ERWIN EDISON CCASA HUALLPA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4711"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ddf7a47142357a779b77e42edfd7bf4010040b06",
+            "inicio": "2025-09-01T12:01:00",
+            "fin": "2025-09-01T14:44:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "72136973",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EDUARDO BENIGNO UTURUNCO HEREDIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "953"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "441c87ff31d530296d66513fa82404c395b1df5a",
+            "inicio": "2025-09-05T15:33:00",
+            "fin": "2025-09-05T17:30:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "72136973",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EDUARDO BENIGNO UTURUNCO HEREDIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "953"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ce72c3d5f88289d03652f353ed7f523096d422bf",
+            "inicio": "2025-09-10T08:00:00",
+            "fin": "2025-09-10T16:37:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "72136973",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EDUARDO BENIGNO UTURUNCO HEREDIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "953"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c50d5056ac4309a0d91cdd3270a79219e3d2eb85",
+            "inicio": "2025-09-11T14:51:00",
+            "fin": "2025-09-11T17:30:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "72136973",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EDUARDO BENIGNO UTURUNCO HEREDIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "953"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4bfc6eddece79eb42cc904af8f0bc6300b627509",
+            "inicio": "2025-09-16T14:03:00",
+            "fin": "2025-09-16T17:30:00",
+            "obs": "CASO GOYO CORDOVA ",
+            "allday": false,
+            "identificacion": "72136973",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EDUARDO BENIGNO UTURUNCO HEREDIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "953"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "6f1bb44b6e522071ef9ade1d83450122509406be",
+            "inicio": "2025-09-06T13:05:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "72155314",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SHERLEY SHIOMARA LEANDRO YUCA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6341"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "0326eeb135a4ed99fb8cefb04213c82d0acc05f3",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA CINTHYA",
+            "allday": true,
+            "identificacion": "72155314",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "SHERLEY SHIOMARA LEANDRO YUCA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6341"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d5181b690182cf57f0d9e1cd86db772b20ac06e2",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "72162183",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "NICOLAS ANGEL DIAZ MENDOZA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "961"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "0efed6d102775d5ccf6d58425401b4d486e7ab8a",
+            "inicio": "2025-09-12T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "DESCANSO MÉDICO (ESPECIE VALORADA)\r\nDIAS: 02 DÍAS",
+            "allday": true,
+            "identificacion": "72201231",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "20 - S.I. ENFERM/ACCIDENTE (20 PRIMEROS DÍAS)",
+            "tipoDePermiso": "descanso_medico",
+            "fullname": "OMAR ANDERSON HUILLCA LLANOS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6473"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "592c945d03fbbfa8b70c421633a7a7bd939a8aa3",
+            "inicio": "2025-09-02T08:00:00",
+            "fin": "2025-09-02T10:29:00",
+            "obs": "AUTORIZA FIORELA",
+            "allday": false,
+            "identificacion": "72321899",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EVELYN  CACERES CHUQUIRIMAY",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6674"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e1c1b44a064bf321f3d086cd7e0693c362e31739",
+            "inicio": "2025-09-06T14:00:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA FIORELA - SR ALEXANDER",
+            "allday": false,
+            "identificacion": "72321899",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "EVELYN  CACERES CHUQUIRIMAY",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6674"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e894dc886d3188045ce6a19144001b80d36d842b",
+            "inicio": "2025-09-13T14:00:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA FIORELA - SR ALEXANDER",
+            "allday": false,
+            "identificacion": "72321899",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "EVELYN  CACERES CHUQUIRIMAY",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6674"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ecf1267ed40968fcbc991ea318e6e3507047816b",
+            "inicio": "2025-09-15T08:00:00",
+            "fin": "2025-09-15T10:03:00",
+            "obs": "AUTORIZA FIORELA",
+            "allday": false,
+            "identificacion": "72321899",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EVELYN  CACERES CHUQUIRIMAY",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6674"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c3884a8043c50233bd25b1bc7b6aa2a489221848",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "72528926",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "RAMÓN JUAN QUISPE SALINAS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "998"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "982f83b980a87ac11d6485527983acdc0fd1f7a1",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "72656145",
+            "code": null,
+            "idMotivo": "3",
+            "idMotivoBuk": null,
+            "motivo": "23 - S.I. DESCANSO VACACIONAL",
+            "tipoDePermiso": "",
+            "fullname": "LIZETH MARIELA MEDINA MONTESINOS",
+            "momentoRevision": null,
+            "paid": "",
+            "dni": 0,
+            "idBuk": "1405"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d49a083cdf0e73ef078e4e60abe794e8ddf04fc3",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "CITT: A-697-00018306-25",
+            "allday": true,
+            "identificacion": "72656145",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "20 - S.I. ENFERM/ACCIDENTE (20 PRIMEROS DÍAS)",
+            "tipoDePermiso": "descanso_medico",
+            "fullname": "LIZETH MARIELA MEDINA MONTESINOS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1405"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "662291d59bf2cbf9ca5aa891d59af70e34a8ef8f",
+            "inicio": "2025-09-15T08:00:00",
+            "fin": "2025-09-15T09:20:00",
+            "obs": "AUTORIZA SR ALEX",
+            "allday": false,
+            "identificacion": "72667941",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EVELYN GABRIELA HUAMANI PHOCCO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "61792b45a44ea177bfd4a6b895b287f450c342e6",
+            "inicio": "2025-09-17T08:34:00",
+            "fin": "2025-09-17T12:29:00",
+            "obs": "CASO GOYO CORDOVA",
+            "allday": false,
+            "identificacion": "72667941",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "EVELYN GABRIELA HUAMANI PHOCCO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5541"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "f441076db9b0fd56438ada5861d36a5bd50a8352",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "73018148",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KENY  SAMATA CASTRO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7382"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c203d4879b0f5313188f70e20383a10cd87c0d52",
+            "inicio": "2025-09-09T00:00:00",
+            "fin": "2025-09-09T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "73018148",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KENY  SAMATA CASTRO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7382"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4706ef637ccb95e27a98c04f4466a701f4a53b68",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "73018148",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KENY  SAMATA CASTRO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7382"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "93ce6c44c4776b2cd16519d8ef2fd081d00ad5ea",
+            "inicio": "2025-09-16T00:00:00",
+            "fin": "2025-09-16T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "73018148",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KENY  SAMATA CASTRO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7382"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4eaa3fa503c3808faf6af800101d8a8f23e61a19",
+            "inicio": "2025-09-17T00:00:00",
+            "fin": "2025-09-17T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "73018148",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "KENY  SAMATA CASTRO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7382"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "3024df12f33ff0a0a45d7cd2b051837aea515176",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA RENE",
+            "allday": true,
+            "identificacion": "73035653",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JESUS JAN FERNANDEZ CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "919"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d5127198b4655e1029930f5c0a5450d826b55644",
+            "inicio": "2025-09-10T15:45:00",
+            "fin": "2025-09-10T17:30:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "73189290",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "PRICSILA  GUEVARA GONZALES",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4578"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "bef170606012b80b53078fdfc96a0bc7ddefcfe7",
+            "inicio": "2025-09-16T08:00:00",
+            "fin": "2025-09-16T09:03:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "73189290",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "PRICSILA  GUEVARA GONZALES",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4578"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "36ca41dd62e52128e62d11d0211a405d07e9505d",
+            "inicio": "2025-09-12T08:00:00",
+            "fin": "2025-09-12T09:48:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "73189290",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "PRICSILA  GUEVARA GONZALES",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4578"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b95ddbcb62c48f3f6e49734620288208b5fa3f65",
+            "inicio": "2025-09-17T08:00:00",
+            "fin": "2025-09-17T10:00:00",
+            "obs": "CASO GOYO CORDOVA",
+            "allday": false,
+            "identificacion": "73189290",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "PRICSILA  GUEVARA GONZALES",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4578"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ac4ec43b57bb611f191441e2cb9099c52511d55e",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-16T00:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": true,
+            "identificacion": "73248345",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "GIOVANNHY  CATUNTA PALOMINO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "978"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a67af0333255b7490b9866f3c0d077655ab960a9",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-04T00:00:00",
+            "obs": "INDICA JHON MAYTA",
+            "allday": true,
+            "identificacion": "73249440",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE ANTONIO LIMASCCA RODRIGUEZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "907"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7dc9d7dc3230b35afa730a9a331fc34cc4d7c9f3",
+            "inicio": "2025-09-12T21:00:00",
+            "fin": "2025-09-12T22:04:00",
+            "obs": "AUTORIZA JHON MAYTA",
+            "allday": false,
+            "identificacion": "73249440",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JOSE ANTONIO LIMASCCA RODRIGUEZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "907"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "12cf6cc88c5a9b89332d0f114b281335cc39730b",
+            "inicio": "2025-09-13T13:59:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "73341486",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CESIA JEMINA MIRANDA CATACORA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1406"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4be551ae5345bb20ac7d4c1afef881d5eb03d55e",
+            "inicio": "2025-09-13T13:33:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "73393063",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SCHNEIDER JEHNERY MAMANI CHAVEZ",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "923"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c6c1113f182ffeda752790a35b388bf24e6fa0b6",
+            "inicio": "2025-09-10T07:30:00",
+            "fin": "2025-09-10T10:57:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "73483002",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SALOMON  FERNANDEZ PARENTE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7417"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "563a93df7b131c0ed6ea69762ad9910a1a5b8840",
+            "inicio": "2025-09-06T13:01:00",
+            "fin": "2025-09-06T13:30:00",
+            "obs": "AUTORIZA JESUS",
+            "allday": false,
+            "identificacion": "73590114",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CRHISTIAN LUCIO TURPO VALERIANO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7042"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "668a27e94007705d983b34f6d3f9d41ce1a4bb01",
+            "inicio": "2025-09-13T13:02:00",
+            "fin": "2025-09-13T13:30:00",
+            "obs": "AUTORIZA JESUS ",
+            "allday": false,
+            "identificacion": "73590114",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CRHISTIAN LUCIO TURPO VALERIANO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7042"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "4d3b175643775fd6af7472ec0fd1084f70d4cc62",
+            "inicio": "2025-09-12T15:32:00",
+            "fin": "2025-09-12T16:15:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": false,
+            "identificacion": "73590114",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CRHISTIAN LUCIO TURPO VALERIANO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7042"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7fa32ecbd4c0dd21682cb1273f113d995009ddbc",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-04T00:00:00",
+            "obs": "AUTORIZA OPERACIONES TRABAJO DOMINGO 07",
+            "allday": true,
+            "identificacion": "73662386",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "ADOLFO  PUMA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1681"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ad6bc51f05b8705e348ec5f6c1ba553b7bf1e14d",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "AUTORIZA OPERACIONES TRABAJO DOMINGO 14",
+            "allday": true,
+            "identificacion": "73662386",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "ADOLFO  PUMA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1681"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d198a974cdab592b3c76ea89438766602d1e1286",
+            "inicio": "2025-09-11T00:00:00",
+            "fin": "2025-09-11T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "73662386",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ADOLFO  PUMA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1681"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c6984f2102a4318c4725ed71d9f1a26691d0e4a8",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "73662386",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ADOLFO  PUMA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1681"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "1c14d5ff92c612d4ebbb3ceea1994226cbd9ec81",
+            "inicio": "2025-09-01T07:30:00",
+            "fin": "2025-09-01T07:47:00",
+            "obs": "AUTORIZA OPERACIONES HIZO REPARTO LOCAL",
+            "allday": false,
+            "identificacion": "73662386",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ADOLFO  PUMA QUISPE",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1681"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "054f7562289fec3381c4397902bdaef36db2e079",
+            "inicio": "2025-09-08T07:30:00",
+            "fin": "2025-09-08T13:30:00",
+            "obs": "POR COMPENSAR AUTORIZA CLEOFE / MELANIE",
+            "allday": false,
+            "identificacion": "73885006",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "FRANCO AMILCAR PAUCCAR AGUILAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6839"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "06ef21ed147753127bac575f8530a5f4b8b70b58",
+            "inicio": "2025-09-12T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "INDICA MELANIE",
+            "allday": true,
+            "identificacion": "73885006",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "FRANCO AMILCAR PAUCCAR AGUILAR",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6839"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "97198abb1c9c732ca8bf3b190ed1bf116a3d933e",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": true,
+            "identificacion": "73941892",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "MILUSKA ANAI DAVILA MELENDEZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6073"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "d06bf9b0ea63db2b5371353b03bbcf8fd2aaec13",
+            "inicio": "2025-09-06T09:46:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA SR RAUL - CAPACITACION",
+            "allday": false,
+            "identificacion": "73941892",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "MILUSKA ANAI DAVILA MELENDEZ",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6073"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c2bdce3d2ac5241d094f1645686bf7bb39ef1f34",
+            "inicio": "2025-09-09T07:50:00",
+            "fin": "2025-09-09T11:44:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "73941892",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "MILUSKA ANAI DAVILA MELENDEZ",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "6073"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e4a5f83a9a690d6d451e6cc7a2797bef893c4afa",
+            "inicio": "2025-09-06T13:38:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "74064296",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "KARLA SUSAN HUAMANI QUISOCALA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7419"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "359ac229263ca2f4dd8343bfbc3372556243760b",
+            "inicio": "2025-09-09T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "DESCANSO MÉDICO (ESPECIE VALORADA)\r\nDÍAS: 07 DIAS",
+            "allday": true,
+            "identificacion": "74231012",
+            "code": null,
+            "idMotivo": "13",
+            "idMotivoBuk": null,
+            "motivo": "20 - S.I. ENFERM/ACCIDENTE (20 PRIMEROS DÍAS)",
+            "tipoDePermiso": "descanso_medico",
+            "fullname": "NICOLAS ISMAEL TURPO RAMOS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7213"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "9ad23d2bd142ca3a729dd40499fcf1d856185bd2",
+            "inicio": "2025-09-16T00:00:00",
+            "fin": "2025-09-16T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "74231012",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "NICOLAS ISMAEL TURPO RAMOS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7213"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ac8f9164d2315953f801b4f6d64b757db3ca9b5c",
+            "inicio": "2025-09-17T00:00:00",
+            "fin": "2025-09-17T00:00:00",
+            "obs": "AUTORIZA OPERACIONES",
+            "allday": true,
+            "identificacion": "74231012",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "NICOLAS ISMAEL TURPO RAMOS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7213"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "2c39fab587144a7f30cb51b41eb517bd8f537efd",
+            "inicio": "2025-09-06T14:45:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA SR RAUL",
+            "allday": false,
+            "identificacion": "74242974",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "CRISTIAN BERNARDO AROTAYPE CCALACHUA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "2716"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e9e2153b320a4657b1f5a570f744f81c9a438ee5",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c09d86af8045cb129fa8f1ef8b8b63e473ccf648",
+            "inicio": "2025-09-09T00:00:00",
+            "fin": "2025-09-09T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a43a5ac02db65d3978878ed816146c9e16bfd9fe",
+            "inicio": "2025-09-10T00:00:00",
+            "fin": "2025-09-10T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "5b7b194a27f1e214a59e292029023eea8b781d87",
+            "inicio": "2025-09-11T00:00:00",
+            "fin": "2025-09-12T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "3cead120434e26d6fd01fd829033e4379b21ed8b",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "77185d60d74d3f53422c5ad0edd920dcc607f1ab",
+            "inicio": "2025-09-15T00:00:00",
+            "fin": "2025-09-15T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b8f956eff2a7738b6cfc7977d3fc5a1a6b98a0d7",
+            "inicio": "2025-09-16T00:00:00",
+            "fin": "2025-09-16T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "244e0bc542ab2adfdc814bcf1d5d97217c120f71",
+            "inicio": "2025-09-17T00:00:00",
+            "fin": "2025-09-17T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "fe2501735da3de47b528b41d454f129c1345047e",
+            "inicio": "2025-09-14T00:00:00",
+            "fin": "2025-09-14T00:00:00",
+            "obs": "INDICA JESUS",
+            "allday": true,
+            "identificacion": "74319533",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "DAVID WILLIAN CHAÑI HUAMANI",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "1008"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c8abac0885667ce7305f50ca04cca0c4b4d09f98",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "INDICA RENE",
+            "allday": true,
+            "identificacion": "74319699",
+            "code": null,
+            "idMotivo": "14",
+            "idMotivoBuk": null,
+            "motivo": "05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER",
+            "tipoDePermiso": "permiso",
+            "fullname": "LUIS ANGEL MARTINEZ SOLIS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4379"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "cb25248cbc2ed58416aa89ebadc3dcd618dc014a",
+            "inicio": "2025-09-15T15:00:00",
+            "fin": "2025-09-15T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "74319699",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "LUIS ANGEL MARTINEZ SOLIS",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "4379"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "287c8b8538d0ecd4a170e03e2e65d526608cfc5b",
+            "inicio": "2025-09-08T00:00:00",
+            "fin": "2025-09-08T00:00:00",
+            "obs": "INDICA RENE",
+            "allday": true,
+            "identificacion": "74536793",
+            "code": null,
+            "idMotivo": "7",
+            "idMotivoBuk": null,
+            "motivo": "01 - S.P. SANCIÓN DISCIPLINARIA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "JOSE ANTONIO MENDOZA QUISPE",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7282"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "dfaf243c004d0fb131b1bcb33e0d79404ff4aeab",
+            "inicio": "2025-09-13T00:00:00",
+            "fin": "2025-09-13T00:00:00",
+            "obs": "AUTORIZA CATHY COMERCIAL - TRABAJO FERIADO 15 DE AGOSTO. ",
+            "allday": true,
+            "identificacion": "74662930",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "YOSIMARA  LARICO CHAMPI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "990"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e0a7bea7a2956316044f9e7b77c1ed926d2897d6",
+            "inicio": "2025-09-06T13:04:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "74978786",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "YAMILE ARACELI APAZA FLORES",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5772"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e2367ab5b20f2b9bf5902df22a09d861b1236f68",
+            "inicio": "2025-09-13T13:27:00",
+            "fin": "2025-09-13T15:00:00",
+            "obs": "AUTORIZA GERENCIA",
+            "allday": false,
+            "identificacion": "74978786",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "YAMILE ARACELI APAZA FLORES",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "5772"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b970ee0c552ca3c511b7cfe1cb527480c0f6e2d2",
+            "inicio": "2025-09-15T17:07:00",
+            "fin": "2025-09-15T17:30:00",
+            "obs": "AUTORIZA FIORELA",
+            "allday": false,
+            "identificacion": "75263088",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "ANGELICA EUDOCIA FLORES BENITO",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "7079"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e09e519fa9045079779b1d037c4d5ac1be5e399a",
+            "inicio": "2025-09-05T14:02:00",
+            "fin": "2025-09-05T17:30:00",
+            "obs": "AUTORIZA SR JAIME SISTEMAS",
+            "allday": false,
+            "identificacion": "75279700",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "LUIS GERARDO LEON VELAZQUES",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7180"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "f53a2fa692fb1c670c0f1ca252e9d868d4d72816",
+            "inicio": "2025-09-06T11:06:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "AUTORIZA SR JAIME SISTEMAS",
+            "allday": false,
+            "identificacion": "75279700",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ASUNTOS LABORALES",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "LUIS GERARDO LEON VELAZQUES",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7180"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "1bc2b52da7a00ff85cbf58e4ebbdcb1a2232606f",
+            "inicio": "2025-09-02T17:05:00",
+            "fin": "2025-09-02T17:30:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "75848921",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SEGUNDO ISIDORO RIOJA BABILONIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7249"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c06776705a39734cbf97e668dabaad10b5456ca4",
+            "inicio": "2025-09-10T16:25:00",
+            "fin": "2025-09-10T17:30:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "75848921",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SEGUNDO ISIDORO RIOJA BABILONIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7249"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "237a4a6c6e8a146461ba079d36b0c4d092294a04",
+            "inicio": "2025-09-12T16:13:00",
+            "fin": "2025-09-12T17:30:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "75848921",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SEGUNDO ISIDORO RIOJA BABILONIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7249"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7ae44c897d07301d7ef94cdb7104444a973ab72d",
+            "inicio": "2025-09-15T07:30:00",
+            "fin": "2025-09-15T08:29:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": false,
+            "identificacion": "75848921",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SEGUNDO ISIDORO RIOJA BABILONIA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "7249"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "3097750cba8bd41832c6e4fa4a41457b92dd0b72",
+            "inicio": "2025-09-07T00:00:00",
+            "fin": "2025-09-14T00:00:00",
+            "obs": "",
+            "allday": true,
+            "identificacion": "75866363",
+            "code": null,
+            "idMotivo": "3",
+            "idMotivoBuk": null,
+            "motivo": "23 - S.I. DESCANSO VACACIONAL",
+            "tipoDePermiso": "",
+            "fullname": "JHON FRANKLIN CAHUATA CABRERA",
+            "momentoRevision": null,
+            "paid": "",
+            "dni": 0,
+            "idBuk": "1413"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ebf6d5529bdb7b309e991c9148df87c40c8d2af0",
+            "inicio": "2025-09-01T00:00:00",
+            "fin": "2025-09-01T00:00:00",
+            "obs": "INDICA OPERACIONES - SHAROOM MOQ",
+            "allday": true,
+            "identificacion": "76234317",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ENRIQUE CHAVEZ CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6939"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "86b8ee78e5f5c67fe10a9d0c09c93e0671f1943f",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-03T00:00:00",
+            "obs": "INDICA OPERACIONES - SHAROOM MOQ",
+            "allday": true,
+            "identificacion": "76234317",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ENRIQUE CHAVEZ CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6939"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "8bd072230f99643131dfb46b92af62d17e4c15df",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-06T00:00:00",
+            "obs": "INDICA OPERACIONES - SHAROOM MOQ",
+            "allday": true,
+            "identificacion": "76234317",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ENRIQUE CHAVEZ CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6939"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "b0ef5f1499fdd8bc294a2b02d587f469d58e11cc",
+            "inicio": "2025-09-07T00:00:00",
+            "fin": "2025-09-10T00:00:00",
+            "obs": "INDICA OPERACIONES - SHAROOM MOQ",
+            "allday": true,
+            "identificacion": "76234317",
+            "code": null,
+            "idMotivo": "27",
+            "idMotivoBuk": null,
+            "motivo": "FALTA INJUSTIFICADA",
+            "tipoDePermiso": "inasistencia",
+            "fullname": "LUIS ENRIQUE CHAVEZ CRUZ",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "6939"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "7165526c0e6fa23440b5da461b6a3f64b8847ebb",
+            "inicio": "2025-09-13T07:00:00",
+            "fin": "2025-09-13T07:28:00",
+            "obs": "AUTORIZA JOSE",
+            "allday": false,
+            "identificacion": "76797081",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ELVIS NILSS QUISPE RAMOS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "987"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "42f7ef6f82e76eeb9d8413c9ff872f8cb3b4640e",
+            "inicio": "2025-09-02T07:30:00",
+            "fin": "2025-09-02T11:11:00",
+            "obs": "ATENCION EN ESSALUD",
+            "allday": false,
+            "identificacion": "76821398",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ATENCION MEDICA ESSALUD",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "MARIA ALEJANDRA MARIN BERNAL",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1058"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "63b6c643a20aca246e3ac3ecd9c5e3e1fc0f3797",
+            "inicio": "2025-09-05T00:00:00",
+            "fin": "2025-09-05T00:00:00",
+            "obs": "ATENCIÓN MÉDICO ESSALUD",
+            "allday": true,
+            "identificacion": "76821398",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ATENCION MEDICA ESSALUD",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "MARIA ALEJANDRA MARIN BERNAL",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1058"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e79ad0682ee37f40f7c5074a7c2ae6e44d3212e8",
+            "inicio": "2025-09-11T16:09:00",
+            "fin": "2025-09-11T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "76868405",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUAN DIEGO SARAVIA PINTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1047"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "0f886c613d4daf25e4ff194e429a29da03f76299",
+            "inicio": "2025-09-12T16:09:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "76868405",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUAN DIEGO SARAVIA PINTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1047"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "8591e9ea1921a0f6e8434bc012b17f4f8bc53481",
+            "inicio": "2025-09-13T13:44:00",
+            "fin": "2025-09-13T14:30:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "76868405",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JUAN DIEGO SARAVIA PINTO",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "1047"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "e5721ec666d56385053377038b309cb17d2eef1e",
+            "inicio": "2025-09-02T00:00:00",
+            "fin": "2025-09-02T00:00:00",
+            "obs": "AUTORIZA MELANIE",
+            "allday": true,
+            "identificacion": "77084214",
+            "code": null,
+            "idMotivo": "128",
+            "idMotivoBuk": null,
+            "motivo": "26 - S.I. PERMISO, LICENCIA CON GOCE DE HABER",
+            "tipoDePermiso": "compensacion_por_dias",
+            "fullname": "CLEOFE ANDALUZ CHAVEZ CONDORI",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "3287"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "a9ac28ab1a9c39cabae511f58f1dd1afcdd0e551",
+            "inicio": "2025-09-08T13:38:00",
+            "fin": "2025-09-08T19:47:00",
+            "obs": "AUTORIZA OPERACIONES HIZO MANTENIMIENTO",
+            "allday": false,
+            "identificacion": "77333573",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "JOSUE HENRY HUAYCHO VARGAS",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "946"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "98774745bbab1e516de89e60dca20176f62ceb74",
+            "inicio": "2025-09-04T00:00:00",
+            "fin": "2025-09-04T00:00:00",
+            "obs": "ATENCIÓN EN ESSALUD",
+            "allday": true,
+            "identificacion": "77475248",
+            "code": null,
+            "idMotivo": "18",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - ATENCION MEDICA ESSALUD",
+            "tipoDePermiso": "permiso_por_hora_con_goce",
+            "fullname": "ALEXANDER HENRY JAÑO SULLCA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4712"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "194600289b1a2b9c33e52abec601a8414c03d3ce",
+            "inicio": "2025-09-12T16:00:00",
+            "fin": "2025-09-12T17:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "77475248",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "27 - S.I. COMPENSACIÓN POR HORAS SOBRETIEMPO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "ALEXANDER HENRY JAÑO SULLCA",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4712"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "c597f060c25ea4602ba46b1e597a5cbd86c3fe61",
+            "inicio": "2025-09-08T20:30:00",
+            "fin": "2025-09-08T21:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "77807851",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JHON KLEYNER MAYTA LAURA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "948"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "ff3f020296a33b3451505c86ed7f3924d093b33d",
+            "inicio": "2025-09-09T20:30:00",
+            "fin": "2025-09-09T22:00:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "77807851",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JHON KLEYNER MAYTA LAURA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "948"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "5b9ea4c7e5c385fd207d7b2bfc942bd2ee78a7fd",
+            "inicio": "2025-09-16T20:30:00",
+            "fin": "2025-09-16T22:04:00",
+            "obs": "AUTORIZA RENE",
+            "allday": false,
+            "identificacion": "77807851",
+            "code": null,
+            "idMotivo": "17",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - PERMISO PARTICULAR",
+            "tipoDePermiso": "permiso_por_hora",
+            "fullname": "JHON KLEYNER MAYTA LAURA",
+            "momentoRevision": null,
+            "paid": "false",
+            "dni": 0,
+            "idBuk": "948"
+          }
+        },
+        {
+          "todosBuk": null,
+          "permiso": {
+            "hash": "f42b2c3e8abada9173a73ca1fae6c739814a00a7",
+            "inicio": "2025-09-06T13:42:00",
+            "fin": "2025-09-06T15:00:00",
+            "obs": "",
+            "allday": false,
+            "identificacion": "78290391",
+            "code": null,
+            "idMotivo": "129",
+            "idMotivoBuk": null,
+            "motivo": "HORAS - COMPENSACIÓN DE HORA DE ALMUERZO",
+            "tipoDePermiso": "compensacion_por_horas_femaco",
+            "fullname": "SHAROOM NICOLS FLORES MACIEL",
+            "momentoRevision": null,
+            "paid": "true",
+            "dni": 0,
+            "idBuk": "4345"
+          }
         }
-        const url = `/api/Permisos/ObtenerPermisosProcesados?fechaInicio=${fi}&fechaFin=${ff}`;
-        return firstValueFrom(this.http.get<UnionTodosBukInntegra[]>(url));
-    }
-
-    // postPermisosData(groupedPermiso: GrupoPermisosBuk, fechaInicio: Date | null): Promise<HorasNoTrabajadasResponse> {
-    //     const url = `/api/Permisos/TraspasarAtrazoToBuk`;
-    //     const body = {
-    //         year: fechaInicio?.getFullYear(),
-    //         month: (fechaInicio?.getMonth() ?? 0) + 1,
-    //         hours: groupedPermiso.totalAtraso/60,
-    //         employee_id: groupedPermiso.idBuk
-    //     };
-    //     return firstValueFrom(this.http.put<HorasNoTrabajadasResponse>(url, body));
-    // }
-
-    constructor(private http: HttpClient) { }
-
-    getPermisos(fechaInicio: string, fechaFin: string): Promise<UnionTodosBukInntegra[]> {
-        return this.getPermisosData(fechaInicio, fechaFin);
-    }
+      ]
+    )
+  }
 }
