@@ -26,87 +26,118 @@ import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
 import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
 import { SinGuionesPipe } from '../../pipes/sin-guiones';
 import { FechaCortaPipe } from '../../pipes/fecha-corta';
+import { Chip } from 'primeng/chip';
+import { Badge } from 'primeng/badge';
 
 interface Column {
-    field: string;
-    header: string;
-    customExportHeader?: string;
+  field: string;
+  header: string;
+  customExportHeader?: string;
 }
 
 interface ExportColumn {
-    title: string;
-    dataKey: string;
+  title: string;
+  dataKey: string;
 }
 
 @Component({
-    selector: 'app-permiso',
-    standalone: true,
-    imports: [
-        CommonModule,
-        TableModule,
-        FormsModule,
-        ButtonModule,
-        RippleModule,
-        ToastModule,
-        ToolbarModule,
-        RatingModule,
-        InputTextModule,
-        TextareaModule,
-        SelectModule,
-        RadioButtonModule,
-        InputNumberModule,
-        DialogModule,
-        TagModule,
-        InputIconModule,
-        IconFieldModule,
-        ConfirmDialogModule,
-        DatePickerModule,
-        FloatLabel,
-        MinutesToFriendlyPipe,
-        HoursToFriendlyPipe,
-        SinGuionesPipe,
-        FechaCortaPipe
-    ],
-    templateUrl: './permisos.html',
-    providers: [MessageService, PermisoService, ConfirmationService]
+  selector: 'app-permiso',
+  standalone: true,
+  imports: [
+    CommonModule,
+    TableModule,
+    FormsModule,
+    ButtonModule,
+    RippleModule,
+    ToastModule,
+    ToolbarModule,
+    RatingModule,
+    InputTextModule,
+    TextareaModule,
+    SelectModule,
+    RadioButtonModule,
+    InputNumberModule,
+    DialogModule,
+    TagModule,
+    InputIconModule,
+    IconFieldModule,
+    ConfirmDialogModule,
+    DatePickerModule,
+    FloatLabel,
+    MinutesToFriendlyPipe,
+    HoursToFriendlyPipe,
+    SinGuionesPipe,
+    FechaCortaPipe,
+    Chip,
+    Badge
+  ],
+  templateUrl: './permisos.html',
+  providers: [MessageService, PermisoService, ConfirmationService]
 })
 
 
 export class Permisos implements OnInit {
 
-    fechaInicio = signal<Date | null>(null);
+  fechaInicio = signal<Date | null>(null);
 
-    fechaFin = signal<Date | null>(null);
+  fechaFin = signal<Date | null>(null);
 
-    permisoDialog: boolean = false;
+  permisoDialog: boolean = false;
 
-    unionTodosBukInntegra = signal<UnionTodosBukInntegra[]>([]);
+  unionTodosBukInntegra = signal<UnionTodosBukInntegra[]>([]);
 
-    // permisosGrupo = signal<GrupoPermisosBuk[]>([]);
+  // permisosGrupo = signal<GrupoPermisosBuk[]>([]);
 
-    permiso!: UnionTodosBukInntegra;
+  permiso!: UnionTodosBukInntegra;
 
-    selectedPermisos!: UnionTodosBukInntegra[] | null;
 
-    submitted: boolean = false;
 
-    statuses!: any[];
+  submitted: boolean = false;
 
-    @ViewChild('dt') dt!: Table;
+  statuses!: any[];
 
-    exportColumns!: ExportColumn[];
+  @ViewChild('dt') dt!: Table;
 
-    cols!: Column[];
-    expandedRows = {};
+  exportColumns!: ExportColumn[];
 
-    constructor(
-        private permisoService: PermisoService,
-    ) { }
+  cols!: Column[];
+  expandedRows = {};
 
-    ngOnInit() {
-    }
+  constructor(
+    private permisoService: PermisoService,
+  ) { }
 
-   selectedMotivo: number | null = null;
+  ngOnInit() {
+  }
+
+  selectedMotivo: number | null = null;
+
+  private formatDate(d: Date | null): string {
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${y}-${m}-${day}`;
+  }
+
+  bukTipoPermiso(todosBuk: any) {
+    const permiso = todosBuk?.permiso
+    const licencia = todosBuk?.licencia
+    const inasistencia = todosBuk?.inasistencia
+    if (permiso) return permiso.permissionTypeCode
+    if (licencia) return licencia.licenceTypeCode
+    if (inasistencia) return inasistencia.absenceTypeCode
+    return ''
+  }
+  bukPagado(todosBuk: any) {
+    const permiso = todosBuk?.permiso
+    const licencia = todosBuk?.licencia
+    const inasistencia = todosBuk?.inasistencia
+    if (permiso) return permiso.paid
+    if (licencia) return true
+    if (inasistencia) return false
+    return null
+  }
 
   motivos = signal([
     { label: 'Permiso', items: [{ label: '05 - S.P. PERMISO, LICENCIA SIN GOCE DE HABER', value: 6 }] },
@@ -163,75 +194,212 @@ export class Permisos implements OnInit {
     }
   ]);
 
-    private formatDate(d: Date | null): string {
-        if (!d) return '';
-        const y = d.getFullYear();
-        const m = ('0' + (d.getMonth() + 1)).slice(-2);
-        const day = ('0' + d.getDate()).slice(-2);
-        return `${y}-${m}-${day}`;
+  estados = [
+    { id: 1, nombre: "solo inngresa", severity: "info" },
+    { id: 2, nombre: "solo buk", severity: "warn" },
+    { id: 3, nombre: "emparejado", severity: "success" },
+    { id: 4, nombre: "discordante", severity: "danger" }
+  ]
+  //////
+  selectedPermisos!: UnionTodosBukInntegra[] | [];
+  tiposPermisoSelected = signal<string | null>(null);
+  estadosSelected = signal<string | null>(null);
+  dniFilter = signal<string | null>(null);
+  // 0) antes dni
+  unionTodosBukInntegraFilterDni = computed(() => {
+    return this.unionTodosBukInntegraEstado().filter(ut => {
+      const filter = (this.dniFilter() ?? '').toLowerCase();
+      return (
+        ut.permiso?.identificacion?.toString().toLowerCase().includes(filter) ||
+        ut.todosBuk?.dni?.toString().toLowerCase().includes(filter) ||
+        ut.permiso?.fullname?.toString().toLowerCase().includes(filter) ||
+        ut.todosBuk?.fullname?.toString().toLowerCase().includes(filter)
+      );
+    })
+  })
+  // 1) Un único computed que devuelve las tres vistas
+  unionTodosBukInntegraFilters = computed(() => {
+    const all = this.unionTodosBukInntegraFilterDni();
+    const tiposPermiso = this.tiposPermisoSelected();
+    const estado = this.estadosSelected();
+
+    const byTiposPermiso: typeof all = [];
+    const byEstado: typeof all = [];
+    const both: typeof all = [];
+
+    for (const tg of all) {
+      const hasTiposPermiso = !tiposPermiso || tg.permiso?.tipoDePermiso == tiposPermiso;
+      const hasEstado = !estado || tg.estado?.id == parseInt(estado);
+
+      if (hasTiposPermiso) byTiposPermiso.push(tg);
+      if (hasEstado) byEstado.push(tg);
+      if (hasTiposPermiso && hasEstado) both.push(tg);
     }
 
-        bukTipoPermiso(todosBuk:any) {
-            const permiso = todosBuk?.permiso
-            const licencia = todosBuk?.licencia
-            const inasistencia = todosBuk?.inasistencia
-            if(permiso) return permiso.permissionTypeCode
-            if(licencia) return licencia.licenceTypeCode
-            if(inasistencia) return inasistencia.absenceTypeCode
-            return ''
-    }
-        bukPagado(todosBuk:any) {
-            const permiso = todosBuk?.permiso
-            const licencia = todosBuk?.licencia
-            const inasistencia = todosBuk?.inasistencia
-            if(permiso) return permiso.paid
-            if(licencia) return true
-            if(inasistencia) return false
-            return null
+    return { all, byTiposPermiso, byEstado, both };
+  });
+
+  // 2) Reutilizar el resultado para exponer los filtros individuales (muy baratos)
+  unionTodosBukInntegraFilter = computed(() => this.unionTodosBukInntegraFilters().both);
+  unionTodosBukInntegraFilterTiposPermiso = computed(() => this.unionTodosBukInntegraFilters().byTiposPermiso);
+  unionTodosBukInntegraFilterEstado = computed(() => this.unionTodosBukInntegraFilters().byEstado);
+
+  // 3) turnos — contar usando Map, recorrido único sobre los turnos relevantes
+  tiposPermiso = computed(() => {
+    const map = new Map<string, number>();
+    for (const g of this.unionTodosBukInntegraFilterEstado()) {
+      if (g.permiso?.tipoDePermiso != null && g.permiso?.tipoDePermiso !== '') {
+        map.set(g.permiso?.tipoDePermiso, (map.get(g.permiso?.tipoDePermiso) ?? 0) + 1);
+      }
     }
 
-        setMesActual() {
-        const hoy = new Date();
-        const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }));
+  });
 
-        this.fechaInicio.set(inicio);
-        this.fechaFin.set(fin);
+  // 4) comparacionsCantidad — construir un mapa de conteos y mapear comparacions (O(n + m))
+  estadosCantidad = computed(() => {
+    const counts = new Map<any, number>();
+    for (const tf of this.unionTodosBukInntegraFilterTiposPermiso()) {
+      const id = tf.estado?.id;
+      if (id != null) counts.set(id, (counts.get(id) ?? 0) + 1);
     }
+    return this.estados.map(c => ({ ...c, cantidad: counts.get(c.id) ?? 0 }));
+  });
 
-    setMesAnterior() {
-        const hoy = new Date();
-        const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-        const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  unionTodosBukInntegraEstado = computed(() => {
+    return this.unionTodosBukInntegra().map((uni, index) => {
+      const inngresa = uni.permiso
+      const buk = uni.todosBuk
 
-        this.fechaInicio.set(inicio);
-        this.fechaFin.set(fin);
-    }
+      if (!inngresa)
+        return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 2) }
+      if (!buk)
+        return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 1) }
+      return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 3) }
+    })
+  });
 
-    // atrazoToBuk(index: number, groupedPermiso: GrupoPermisosBuk) {
-    //     this.permisoService.postPermisosData(groupedPermiso, this.fechaInicio).then((data) => {
-    //         const item = this.permisosGrupo()[index];
-    //         if (!item) return;
-    //         item?.permisosBuk?.set(data.ausencia);
-    //     });
-    // }
+  //////
+  totalPermisos = computed(() => {
+    return this.unionTodosBukInntegra().length
+  })
 
-    loadDemoData() {
-        const fi = this.formatDate(this.fechaInicio());
-        const ff = this.formatDate(this.fechaFin());
+  setMesActual() {
+    const hoy = new Date();
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
 
-        this.permisoService.getPermisos(fi, ff).then((data) => {
-            this.unionTodosBukInntegra.set(data);
-        });
+    this.fechaInicio.set(inicio);
+    this.fechaFin.set(fin);
+  }
 
-        this.cols = [
-            { field: 'nombre', header: 'Nombre' },
-            { field: 'dia', header: 'Dia' },
-            { field: 'entrada_real', header: 'Entrada Real' },
-            { field: 'atraso', header: 'Atraso' },
-            { field: 'atraso', header: 'Atraso2' },
-        ];
+  setMesAnterior() {
+    const hoy = new Date();
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
 
-        this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-    }
+    this.fechaInicio.set(inicio);
+    this.fechaFin.set(fin);
+  }
+
+  permisosToBukVolcar() {
+    const permisos = this.selectedPermisos
+      .map(sel => sel?.permiso)
+      .filter((p): p is PermisosModelos => !!p)
+    this.permisoService.postPermisosBatch(permisos).then((data) => {
+      this.selectedPermisos = []
+
+      const dataParsed = data
+      dataParsed.items = data.items.map((item: any) => ({
+        ...item,
+        response: typeof item.response === "string"
+          ? JSON.parse(item.response)
+          : item.response
+      }));
+
+      console.log(dataParsed);
+
+
+      const exitosos = data.items.filter((req: any) => {
+        return req.success == true
+      })
+      exitosos.forEach((exitoso: any) => {
+        const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
+          return unionTodo.permiso?.hash == exitoso.response.permission.Hash
+        })
+        const item = this.unionTodosBukInntegra()[index];
+        if (!item) return;
+        const fast = {
+
+        }
+
+        item?.todosBuk?.set(exitoso?.response?.permission ?? null);
+      })
+
+      const erroneos = data.total - data.succeeded
+      let detalle
+      let severidad
+      let sumario
+      if (data.total == data.succeeded) {
+        detalle = data.succeeded + ' tardanzas traspasadas a Buk'
+        severidad = 'success'
+        sumario = 'Éxito total'
+      }
+      if (erroneos != data.total && data.total > data.succeeded) {
+        detalle = data.succeeded + ' tardanzas traspasadas a Buk, ' + erroneos + ' tardanzas fallidas'
+        severidad = 'warn'
+        sumario = 'Éxito parcial'
+      }
+      if (erroneos == data.total) {
+        detalle = erroneos + ' tardanzas fallidas'
+        severidad = 'error'
+        sumario = 'Fallo total'
+      }
+
+      // this.messageService.add({
+      //   severity: severidad,
+      //   summary: sumario,
+      //   detail: detalle,
+      //   life: 3000
+      // });
+      console.log(data)
+    })
+      .catch((e) => {
+        console.error(e);
+        // this.messageService.add({
+        //     severity: 'error',
+        //     summary: 'Error',
+        //     detail: 'No se pudo traspasar el volcado tardanzas a Buk ' + e.error.error,
+        //     life: 4000
+        // });
+      });
+  }
+
+  loadDemoData() {
+    const fi = this.formatDate(this.fechaInicio());
+    const ff = this.formatDate(this.fechaFin());
+
+    this.permisoService.getPermisos(fi, ff).then((data) => {
+      const mapped = (data as any[]).map(g => ({
+        ...g,
+        // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
+        todosBuk: signal<TodosBuk | undefined>(g.todosBuk ?? null)
+      })) as UnionTodosBukInntegra[];
+
+      this.unionTodosBukInntegra.set(mapped);
+      // this.unionTodosBukInntegra.set(data);
+    });
+
+    this.cols = [
+      { field: 'nombre', header: 'Nombre' },
+      { field: 'dia', header: 'Dia' },
+      { field: 'entrada_real', header: 'Entrada Real' },
+      { field: 'atraso', header: 'Atraso' },
+      { field: 'atraso', header: 'Atraso2' },
+    ];
+
+    this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
+  }
 }

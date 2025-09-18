@@ -50,9 +50,45 @@
     </ng-template>
 </p-toolbar>
 
+<div class="card" [style]="{'padding':'1em'}">
+    <div class="mb-2 flex items-center justify-between flex-wrap">
+        <div class="flex items-center flex-wrap gap-2">
+            <p-floatlabel variant="on">
+    <input pInputText id="on_label" pInputText [(ngModel)]="dniFilter" />
+    <label for="on_label">Nombre o Dni</label>
+</p-floatlabel>
+            <p-select [options]="tiposPermiso()" [(ngModel)]="tiposPermisoSelected" optionLabel="nombre" optionValue="nombre"
+                [checkmark]="true" [showClear]="true" placeholder="Selecione un tipo de permiso" class="mr-2 w-full md:w-56">
+                <ng-template let-tipoPermiso #item>
+                    <span class="mr-2">
+                        {{tipoPermiso.nombre}}
+                    </span>
+                    <p-badge [value]="tipoPermiso.cantidad" severity="secondary" badgeSize="small" />
+                </ng-template>
+            </p-select>
+
+            <p-select [options]="estadosCantidad()" [(ngModel)]="estadosSelected" optionLabel="nombre"
+                optionValue="id" [checkmark]="true" [showClear]="true" placeholder="Selecione una comparación"
+                class="mr-2 w-full md:w-56">
+                <ng-template let-estado #item>
+                    <p-tag [value]="estado.nombre" [severity]="estado.severity" class="mr-2" />
+                    <p-badge [value]="estado.cantidad" severity="secondary" badgeSize="small" />
+                </ng-template>
+            </p-select>
+
+
+            <span class="mr-2">{{totalPermisos()}} permisos</span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <p-button label="Traspasar" severity="warn" class="mr-2" (onClick)="permisosToBukVolcar()" />
+            <span>{{selectedPermisos?.length || 0}} seleccionados</span>
+        </div>
+    </div>
+
 <div class="card">
-    <p-table [value]="unionTodosBukInntegra()" dataKey="identificacion" size="small"
-        [tableStyle]="{ 'min-width': '60rem' }" [expandedRowKeys]="expandedRows" showGridlines stripedRows>
+    <p-table [value]="unionTodosBukInntegraFilter()" dataKey="rowIndex" size="small"
+        [tableStyle]="{ 'min-width': '60rem' }" showGridlines stripedRows [(selection)]="selectedPermisos">
 
         <ng-template #header>
             <tr>
