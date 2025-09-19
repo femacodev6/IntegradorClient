@@ -26,8 +26,13 @@ import { MinutesToFriendlyPipe } from '../../pipes/minutes-to-friendly';
 import { HoursToFriendlyPipe } from '../../pipes/hours-to-friendly';
 import { SinGuionesPipe } from '../../pipes/sin-guiones';
 import { FechaCortaPipe } from '../../pipes/fecha-corta';
+import { SoloHoraPipe } from '../../pipes/date-hora';
+import { SoloFechaPipe } from '../../pipes/date-fecha';
+import { FechaLargaPipe } from '../../pipes/date-fecha-pretty';
 import { Chip } from 'primeng/chip';
 import { Badge } from 'primeng/badge';
+import { WritableSignal } from '@angular/core';
+import { Menu } from 'primeng/menu';
 
 interface Column {
   field: string;
@@ -68,11 +73,15 @@ interface ExportColumn {
     HoursToFriendlyPipe,
     SinGuionesPipe,
     FechaCortaPipe,
+    FechaLargaPipe,
+    SoloHoraPipe,
+    SoloFechaPipe,
     Chip,
-    Badge
+    Badge,
+    Menu
   ],
   templateUrl: './permisos.html',
-  providers: [MessageService, PermisoService, ConfirmationService]
+  providers: [PermisoService, ConfirmationService]
 })
 
 
@@ -91,6 +100,51 @@ export class Permisos implements OnInit {
   permiso!: UnionTodosBukInntegra;
 
 
+  menuItems: any[] = [];
+
+  openMenu(event: Event, row: any, menu: any) {
+
+    this.menuItems = [
+      {
+        label: 'compensacion por dias',
+        command: () => console.log("compensacion_por_dias")
+      },
+      {
+        label: 'compensacion por horas femaco',
+        command: () => console.log("compensacion_por_horas_femaco")
+      }
+    ];
+
+
+    menu.toggle(event);
+  }
+
+  openMenuInasistencia(event: Event, row: any, menu: any) {
+    console.log(row)
+    this.menuItems = [
+      {
+        label: 'inasistencia',
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "inasistencia")
+      },
+      {
+        label: 'cese',
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "cese")
+      }
+    ];
+
+
+    menu.toggle(event);
+  }
+
+cambiarTipoPermiso(index: number, permiso: string) {
+  const lista = this.unionTodosBukInntegra();
+  if (!lista) return;
+
+  const item = lista[index];
+  if (!item?.permiso?.tipoDePermisoAlternativo) return;
+
+  item.permiso.tipoDePermisoAlternativo.set(permiso);
+}
 
   submitted: boolean = false;
 
@@ -105,6 +159,7 @@ export class Permisos implements OnInit {
 
   constructor(
     private permisoService: PermisoService,
+    private messageService: MessageService,
   ) { }
 
   ngOnInit() {
@@ -136,6 +191,24 @@ export class Permisos implements OnInit {
     if (permiso) return permiso.paid
     if (licencia) return true
     if (inasistencia) return false
+    return null
+  }
+  bukStartTime(todosBuk: any) {
+    const permiso = todosBuk?.permiso
+    const licencia = todosBuk?.licencia
+    const inasistencia = todosBuk?.inasistencia
+    if (permiso) return permiso.startTime
+    if (licencia) return licencia.startTime
+    if (inasistencia) return inasistencia.startTime
+    return null
+  }
+  bukEndTime(todosBuk: any) {
+    const permiso = todosBuk?.permiso
+    const licencia = todosBuk?.licencia
+    const inasistencia = todosBuk?.inasistencia
+    if (permiso) return permiso.endTime
+    if (licencia) return licencia.endTime
+    if (inasistencia) return inasistencia.endTime
     return null
   }
 
@@ -211,9 +284,9 @@ export class Permisos implements OnInit {
       const filter = (this.dniFilter() ?? '').toLowerCase();
       return (
         ut.permiso?.identificacion?.toString().toLowerCase().includes(filter) ||
-        ut.todosBuk?.dni?.toString().toLowerCase().includes(filter) ||
-        ut.permiso?.fullname?.toString().toLowerCase().includes(filter) ||
-        ut.todosBuk?.fullname?.toString().toLowerCase().includes(filter)
+        // ut.todosBuk?.dni?.toString().toLowerCase().includes(filter) ||
+        ut.permiso?.fullname?.toString().toLowerCase().includes(filter)
+        // ut.todosBuk?.fullname?.toString().toLowerCase().includes(filter)
       );
     })
   })
@@ -271,7 +344,8 @@ export class Permisos implements OnInit {
   unionTodosBukInntegraEstado = computed(() => {
     return this.unionTodosBukInntegra().map((uni, index) => {
       const inngresa = uni.permiso
-      const buk = uni.todosBuk
+      // const buk = uni.todosBuk()
+      const buk = (uni.todosBuk as WritableSignal<TodosBuk | null>)!();
 
       if (!inngresa)
         return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 2) }
@@ -283,7 +357,7 @@ export class Permisos implements OnInit {
 
   //////
   totalPermisos = computed(() => {
-    return this.unionTodosBukInntegra().length
+    return this.unionTodosBukInntegraFilter().length
   })
 
   setMesActual() {
@@ -311,31 +385,27 @@ export class Permisos implements OnInit {
     this.permisoService.postPermisosBatch(permisos).then((data) => {
       this.selectedPermisos = []
 
-      const dataParsed = data
-      dataParsed.items = data.items.map((item: any) => ({
-        ...item,
-        response: typeof item.response === "string"
-          ? JSON.parse(item.response)
-          : item.response
-      }));
-
-      console.log(dataParsed);
-
-
       const exitosos = data.items.filter((req: any) => {
         return req.success == true
       })
       exitosos.forEach((exitoso: any) => {
+        const permiso = exitoso.permisoResponse.permission
         const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
-          return unionTodo.permiso?.hash == exitoso.response.permission.Hash
+          return unionTodo.permiso?.hash == permiso.hash
         })
         const item = this.unionTodosBukInntegra()[index];
         if (!item) return;
-        const fast = {
-
-        }
-
-        item?.todosBuk?.set(exitoso?.response?.permission ?? null);
+        // item?.todosBuk?.set(exitoso?.response?.permission ?? null);
+        const { paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime, ...rest } = permiso
+        const permisoSet = {
+          ...rest,
+          licencia: null,
+          inasistencia: null,
+          permiso: {
+            paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime
+          }
+        };
+        (item?.todosBuk as WritableSignal<TodosBuk | null>)?.set(permisoSet ?? null);
       })
 
       const erroneos = data.total - data.succeeded
@@ -343,37 +413,37 @@ export class Permisos implements OnInit {
       let severidad
       let sumario
       if (data.total == data.succeeded) {
-        detalle = data.succeeded + ' tardanzas traspasadas a Buk'
+        detalle = data.succeeded + ' permisos traspasadas a Buk'
         severidad = 'success'
         sumario = 'Éxito total'
       }
       if (erroneos != data.total && data.total > data.succeeded) {
-        detalle = data.succeeded + ' tardanzas traspasadas a Buk, ' + erroneos + ' tardanzas fallidas'
+        detalle = data.succeeded + ' permisos traspasadas a Buk, ' + erroneos + ' permisos fallidas'
         severidad = 'warn'
         sumario = 'Éxito parcial'
       }
       if (erroneos == data.total) {
-        detalle = erroneos + ' tardanzas fallidas'
+        detalle = erroneos + ' permisos fallidas'
         severidad = 'error'
         sumario = 'Fallo total'
       }
 
-      // this.messageService.add({
-      //   severity: severidad,
-      //   summary: sumario,
-      //   detail: detalle,
-      //   life: 3000
-      // });
+      this.messageService.add({
+        severity: severidad,
+        summary: sumario,
+        detail: detalle,
+        life: 3000
+      });
       console.log(data)
     })
       .catch((e) => {
         console.error(e);
-        // this.messageService.add({
-        //     severity: 'error',
-        //     summary: 'Error',
-        //     detail: 'No se pudo traspasar el volcado tardanzas a Buk ' + e.error.error,
-        //     life: 4000
-        // });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo traspasar el volcado permisos a Buk ' + e.error.error,
+          life: 4000
+        });
       });
   }
 

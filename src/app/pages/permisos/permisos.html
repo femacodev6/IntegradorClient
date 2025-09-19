@@ -18,8 +18,9 @@
     .border-verde {
         border: 2px solid #8fc74a;
     }
-    .grupo-label{
-        color:black;
+
+    .grupo-label {
+        color: black;
         font-weight: bolder;
     }
 </style>
@@ -38,14 +39,14 @@
             <p-datepicker [(ngModel)]="fechaFin" />
             <label for="on_label">Fecha Fin</label>
         </p-floatlabel>
-        <p-select [options]="motivos()" [(ngModel)]="selectedMotivo" placeholder="MOTIVO INNGRESA:" [group]="true"
+        <!-- <p-select [options]="motivos()" [(ngModel)]="selectedMotivo" placeholder="MOTIVO INNGRESA:" [group]="true"
             class="w-full md:w-56">
             <ng-template let-group pTemplate="group">
                 <div class="flex items-center grupo-label">
                     <span>{{ group.label }}</span>
                 </div>
             </ng-template>
-        </p-select>
+        </p-select> -->
         <p-button label="Ver permisos" severity="info" class="mr-2" (onClick)="loadDemoData()" />
     </ng-template>
 </p-toolbar>
@@ -54,11 +55,12 @@
     <div class="mb-2 flex items-center justify-between flex-wrap">
         <div class="flex items-center flex-wrap gap-2">
             <p-floatlabel variant="on">
-    <input pInputText id="on_label" pInputText [(ngModel)]="dniFilter" />
-    <label for="on_label">Nombre o Dni</label>
-</p-floatlabel>
-            <p-select [options]="tiposPermiso()" [(ngModel)]="tiposPermisoSelected" optionLabel="nombre" optionValue="nombre"
-                [checkmark]="true" [showClear]="true" placeholder="Selecione un tipo de permiso" class="mr-2 w-full md:w-56">
+                <input pInputText id="on_label" pInputText [(ngModel)]="dniFilter" />
+                <label for="on_label">Nombre o Dni</label>
+            </p-floatlabel>
+            <p-select [options]="tiposPermiso()" [(ngModel)]="tiposPermisoSelected" optionLabel="nombre"
+                optionValue="nombre" [checkmark]="true" [showClear]="true" placeholder="Tipo de permiso"
+                class="mr-2 w-full md:w-56">
                 <ng-template let-tipoPermiso #item>
                     <span class="mr-2">
                         {{tipoPermiso.nombre}}
@@ -67,9 +69,8 @@
                 </ng-template>
             </p-select>
 
-            <p-select [options]="estadosCantidad()" [(ngModel)]="estadosSelected" optionLabel="nombre"
-                optionValue="id" [checkmark]="true" [showClear]="true" placeholder="Selecione una comparación"
-                class="mr-2 w-full md:w-56">
+            <p-select [options]="estadosCantidad()" [(ngModel)]="estadosSelected" optionLabel="nombre" optionValue="id"
+                [checkmark]="true" [showClear]="true" placeholder="Comparación" class="mr-2 w-full md:w-56">
                 <ng-template let-estado #item>
                     <p-tag [value]="estado.nombre" [severity]="estado.severity" class="mr-2" />
                     <p-badge [value]="estado.cantidad" severity="secondary" badgeSize="small" />
@@ -85,57 +86,88 @@
             <span>{{selectedPermisos?.length || 0}} seleccionados</span>
         </div>
     </div>
+    <p-menu #menu [model]="menuItems" [popup]="true"></p-menu>
 
-<div class="card">
-    <p-table [value]="unionTodosBukInntegraFilter()" dataKey="rowIndex" size="small"
-        [tableStyle]="{ 'min-width': '60rem' }" showGridlines stripedRows [(selection)]="selectedPermisos">
+    <div class="card">
+        <p-table [value]="unionTodosBukInntegraFilter()" dataKey="rowIndex" size="small"
+            [tableStyle]="{ 'min-width': '60rem' }" showGridlines stripedRows [(selection)]="selectedPermisos">
 
-        <ng-template #header>
-            <tr>
-                <th></th>
-                <th colspan="6" class="azul">Inngresa</th>
-                <th colspan="6" class="verde">Buk</th>
-            </tr>
-            <tr>
-                <th style="width: 3rem">
-                    <p-tableHeaderCheckbox />
-                </th>
-                <th class="azul">DNI</th>
-                <th class="azul">Nombre</th>
-                <th class="azul">Tipo de Permiso</th>
-                <th class="azul">Inicio</th>
-                <th class="azul">Fin</th>
-                <th class="azul">Por</th>
-                <!-- buk -->
-                <th class="verde">DNI</th>
-                <th class="verde">Nombre</th>
-                <th class="verde">Tipo de Permiso</th>
-                <th class="verde">Inicio</th>
-                <th class="verde">Fin</th>
-                <th class="verde">Pago</th>
-            </tr>
-        </ng-template>
-        <ng-template #body let-unionTodosBukInntegra>
-            <tr>
-                <td style="width: 3rem">
-                    <p-tableCheckbox [value]="unionTodosBukInntegra" />
-                </td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.identificacion }}</td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fullname }}</td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.tipoDePermiso | sinGuiones }}</td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.inicio | fechaCorta }}</td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fin | fechaCorta }}</td>
-                <td class="border-azul">{{ unionTodosBukInntegra.permiso? unionTodosBukInntegra.permiso?.allday? "Días"
-                    : "Horas": "" }}</td>
-                <!-- buk -->
-                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.dni }}</td>
-                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.fullname }}</td>
-                <td class="border-verde">{{ bukTipoPermiso(unionTodosBukInntegra.todosBuk) | sinGuiones }}</td>
-                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.startDate | fechaCorta }}</td>
-                <td class="border-verde">{{ unionTodosBukInntegra.todosBuk?.endDate | fechaCorta }}</td>
-                <td class="border-verde">{{ bukPagado(unionTodosBukInntegra.todosBuk)==null?'':bukPagado(unionTodosBukInntegra.todosBuk)?"Si":"No" }}</td>
+            <ng-template #header>
+                <tr>
+                    <th></th>
+                    <th colspan="6" class="azul">Inngresa</th>
+                    <th colspan="6" class="verde">Buk</th>
+                </tr>
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox />
+                    </th>
+                    <th class="azul">DNI</th>
+                    <th class="azul">Nombre</th>
+                    <th class="azul">Tipo de Permiso</th>
+                    <th class="azul">Inicio</th>
+                    <th class="azul">Fin</th>
+                    <th class="azul">Por</th>
+                    <!-- buk -->
+                    <th class="verde">DNI</th>
+                    <th class="verde">Nombre</th>
+                    <th class="verde">Tipo de Permiso</th>
+                    <th class="verde">Inicio</th>
+                    <th class="verde">Fin</th>
+                    <th class="verde">Pago</th>
+                </tr>
+            </ng-template>
+            <ng-template #body let-unionTodosBukInntegra>
+                <tr>
+                    <td style="width: 3rem">
+                        <p-tableCheckbox [value]="unionTodosBukInntegra" />
+                    </td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.identificacion }}</td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fullname }}</td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.tipoDePermiso | sinGuiones }}
+                        
+                        {{ unionTodosBukInntegra.permiso?.tipoDePermisoAlternativo | sinGuiones }}
+                        @if(!unionTodosBukInntegra.todosBuk()){
+                        <div class="flex justify-center">
+                            @if(unionTodosBukInntegra.permiso.tipoDePermiso=="compensacion_por_horas_femaco"){
+                                <p-button (click)="openMenu($event, unionTodosBukInntegra, menu)"
+                                    icon="pi pi-arrow-right-arrow-left" size="small" severity="warn">
+                                </p-button>
+                            }
+                            @if(unionTodosBukInntegra.permiso.tipoDePermiso=="inasistencia"){
+                                <p-button (click)="openMenuInasistencia($event, unionTodosBukInntegra, menu)"
+                                    icon="pi pi-arrow-right-arrow-left" size="small" severity="warn">
+                                </p-button>
+                            }
+                        </div>
+                        }
+                    </td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.inicio | fechaLarga }} <p-tag
+                            [value]="unionTodosBukInntegra.permiso?.inicio | soloHora" severity="info" /> </td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fin | fechaLarga }} <p-tag
+                            [value]="unionTodosBukInntegra.permiso?.fin | soloHora" severity="info" /> </td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.permiso? unionTodosBukInntegra.permiso?.allday?
+                        "Días"
+                        : "Horas": "" }}</td>
+                    <!-- buk -->
+                    <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.dni }}</td>
+                    <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.fullname }}</td>
+                    <td class="border-verde">{{ bukTipoPermiso(unionTodosBukInntegra.todosBuk()) | sinGuiones }}</td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
+                        @if(bukStartTime(unionTodosBukInntegra.todosBuk())){
+                        <p-tag [value]="bukStartTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" />
+                        }
+                    </td>
+                    <td class="border-azul">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
+                        @if(bukEndTime(unionTodosBukInntegra.todosBuk())){
+                        <p-tag [value]="bukEndTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" />
+                        }
+                    </td>
+                    <td class="border-verde">{{
+                        bukPagado(unionTodosBukInntegra.todosBuk())==null?'':bukPagado(unionTodosBukInntegra.todosBuk())?"Si":"No"
+                        }}</td>
 
-            </tr>
-        </ng-template>
-    </p-table>
-</div>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
