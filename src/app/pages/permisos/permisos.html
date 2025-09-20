@@ -58,25 +58,28 @@
                 <input pInputText id="on_label" pInputText [(ngModel)]="dniFilter" />
                 <label for="on_label">Nombre o Dni</label>
             </p-floatlabel>
-            <p-select [options]="tiposPermiso()" [(ngModel)]="tiposPermisoSelected" optionLabel="nombre"
-                optionValue="nombre" [checkmark]="true" [showClear]="true" placeholder="Tipo de permiso"
-                class="mr-2 w-full md:w-56">
-                <ng-template let-tipoPermiso #item>
-                    <span class="mr-2">
-                        {{tipoPermiso.nombre}}
-                    </span>
-                    <p-badge [value]="tipoPermiso.cantidad" severity="secondary" badgeSize="small" />
-                </ng-template>
-            </p-select>
-
-            <p-select [options]="estadosCantidad()" [(ngModel)]="estadosSelected" optionLabel="nombre" optionValue="id"
-                [checkmark]="true" [showClear]="true" placeholder="Comparación" class="mr-2 w-full md:w-56">
-                <ng-template let-estado #item>
-                    <p-tag [value]="estado.nombre" [severity]="estado.severity" class="mr-2" />
-                    <p-badge [value]="estado.cantidad" severity="secondary" badgeSize="small" />
-                </ng-template>
-            </p-select>
-
+            <p-floatlabel class="w-full md:w-56" variant="on">
+                <p-select [options]="tiposPermiso()" [(ngModel)]="tiposPermisoSelected" optionLabel="nombre"
+                    optionValue="nombre" [checkmark]="true" [showClear]="true" class="mr-2 w-full md:w-56">
+                    <ng-template let-tipoPermiso #item>
+                        <span class="mr-2">
+                            {{tipoPermiso.nombre}}
+                        </span>
+                        <p-badge [value]="tipoPermiso.cantidad" severity="secondary" badgeSize="small" />
+                    </ng-template>
+                </p-select>
+                <label for="on_label">Tipo de permiso</label>
+            </p-floatlabel>
+            <p-floatlabel class="w-full md:w-56" variant="on">
+                <p-select [options]="estadosCantidad()" [(ngModel)]="estadosSelected" optionLabel="nombre"
+                    optionValue="id" [checkmark]="true" [showClear]="true" class="mr-2 w-full md:w-56">
+                    <ng-template let-estado #item>
+                        <p-tag [value]="estado.nombre" [severity]="estado.severity" class="mr-2" />
+                        <p-badge [value]="estado.cantidad" severity="secondary" badgeSize="small" />
+                    </ng-template>
+                </p-select>
+                <label for="on_label">Inngresa - Buk</label>
+            </p-floatlabel>
 
             <span class="mr-2">{{totalPermisos()}} permisos</span>
         </div>
@@ -90,7 +93,7 @@
 
     <div class="card">
         <p-table [value]="unionTodosBukInntegraFilter()" dataKey="rowIndex" size="small"
-            [tableStyle]="{ 'min-width': '60rem' }" showGridlines stripedRows [(selection)]="selectedPermisos">
+            [tableStyle]="{ 'min-width': '60rem' }" showGridlines [(selection)]="selectedPermisos">
 
             <ng-template #header>
                 <tr>
@@ -124,43 +127,54 @@
                     </td>
                     <td class="border-azul">{{ unionTodosBukInntegra.permiso?.identificacion }}</td>
                     <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fullname }}</td>
-                    <td class="border-azul">{{ unionTodosBukInntegra.permiso?.tipoDePermiso | sinGuiones }}
-                        
-                        {{ unionTodosBukInntegra.permiso?.tipoDePermisoAlternativo | sinGuiones }}
+                    <td class="border-azul"><span [class]="{
+  'line-through': unionTodosBukInntegra.permiso?.tipoDePermisoAlternativo(),
+  'text-orange-500': unionTodosBukInntegra.estado.id==4,
+}">{{ unionTodosBukInntegra.permiso?.tipoDePermiso | sinGuiones }}</span>
+
+                        {{ unionTodosBukInntegra.permiso?.tipoDePermisoAlternativo() | sinGuiones }}
                         @if(!unionTodosBukInntegra.todosBuk()){
-                        <div class="flex justify-center">
+                        <div class="flex justify-end">
                             @if(unionTodosBukInntegra.permiso.tipoDePermiso=="compensacion_por_horas_femaco"){
-                                <p-button (click)="openMenu($event, unionTodosBukInntegra, menu)"
-                                    icon="pi pi-arrow-right-arrow-left" size="small" severity="warn">
-                                </p-button>
+                            <p-button (click)="openMenu($event, unionTodosBukInntegra, menu)"
+                                icon="pi pi-arrow-right-arrow-left" size="small" severity="warn" [rounded]="true"
+                                variant="text">
+                            </p-button>
                             }
                             @if(unionTodosBukInntegra.permiso.tipoDePermiso=="inasistencia"){
-                                <p-button (click)="openMenuInasistencia($event, unionTodosBukInntegra, menu)"
-                                    icon="pi pi-arrow-right-arrow-left" size="small" severity="warn">
-                                </p-button>
+                            <p-button (click)="openMenuInasistencia($event, unionTodosBukInntegra, menu)"
+                                icon="pi pi-arrow-right-arrow-left" size="small" severity="warn" [rounded]="true"
+                                variant="text">
+                            </p-button>
                             }
                         </div>
                         }
                     </td>
                     <td class="border-azul">{{ unionTodosBukInntegra.permiso?.inicio | fechaLarga }} <p-tag
-                            [value]="unionTodosBukInntegra.permiso?.inicio | soloHora" severity="info" /> </td>
+                            [value]="unionTodosBukInntegra.permiso?.inicio | soloHora" severity="info" [rounded]="true"/> </td>
                     <td class="border-azul">{{ unionTodosBukInntegra.permiso?.fin | fechaLarga }} <p-tag
-                            [value]="unionTodosBukInntegra.permiso?.fin | soloHora" severity="info" /> </td>
+                            [value]="unionTodosBukInntegra.permiso?.fin | soloHora" severity="info" [rounded]="true"/> </td>
                     <td class="border-azul">{{ unionTodosBukInntegra.permiso? unionTodosBukInntegra.permiso?.allday?
                         "Días"
                         : "Horas": "" }}</td>
                     <!-- buk -->
                     <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.dni }}</td>
                     <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.fullname }}</td>
-                    <td class="border-verde">{{ bukTipoPermiso(unionTodosBukInntegra.todosBuk()) | sinGuiones }}</td>
-                    <td class="border-azul">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
+                    <td class="border-verde">
+                        <span [class]="{
+  'text-orange-500': unionTodosBukInntegra.estado.id==4,
+}">
+                        {{ bukTipoPermiso(unionTodosBukInntegra.todosBuk()) | sinGuiones }}
+                        </span>
+                    </td>
+                    <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
                         @if(bukStartTime(unionTodosBukInntegra.todosBuk())){
-                        <p-tag [value]="bukStartTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" />
+                        <p-tag [value]="bukStartTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" [rounded]="true"/>
                         }
                     </td>
-                    <td class="border-azul">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
+                    <td class="border-verde">{{ unionTodosBukInntegra.todosBuk()?.startDate | fechaLarga }}
                         @if(bukEndTime(unionTodosBukInntegra.todosBuk())){
-                        <p-tag [value]="bukEndTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" />
+                        <p-tag [value]="bukEndTime(unionTodosBukInntegra.todosBuk()) | soloHora" severity="info" [rounded]="true"/>
                         }
                     </td>
                     <td class="border-verde">{{

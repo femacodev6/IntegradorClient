@@ -106,12 +106,12 @@ export class Permisos implements OnInit {
 
     this.menuItems = [
       {
-        label: 'compensacion por dias',
-        command: () => console.log("compensacion_por_dias")
+        label: 'compensacion por horas femaco',
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_horas_femaco",row.permiso.tipoDePermiso)
       },
       {
-        label: 'compensacion por horas femaco',
-        command: () => console.log("compensacion_por_horas_femaco")
+        label: 'compensacion por dias',
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_dias",row.permiso.tipoDePermiso)
       }
     ];
 
@@ -120,30 +120,33 @@ export class Permisos implements OnInit {
   }
 
   openMenuInasistencia(event: Event, row: any, menu: any) {
-    console.log(row)
     this.menuItems = [
       {
         label: 'inasistencia',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "inasistencia")
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "inasistencia",row.permiso.tipoDePermiso)
       },
       {
         label: 'cese',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "cese")
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "cese",row.permiso.tipoDePermiso)
       }
     ];
-
 
     menu.toggle(event);
   }
 
-cambiarTipoPermiso(index: number, permiso: string) {
+cambiarTipoPermiso(index: number, tipoDePermisoAlternativo: string,tipoDePermiso: string) {
   const lista = this.unionTodosBukInntegra();
   if (!lista) return;
 
   const item = lista[index];
   if (!item?.permiso?.tipoDePermisoAlternativo) return;
+if(tipoDePermisoAlternativo==tipoDePermiso){
 
-  item.permiso.tipoDePermisoAlternativo.set(permiso);
+  item.permiso.tipoDePermisoAlternativo.set(null);
+} else{
+
+  item.permiso.tipoDePermisoAlternativo.set(tipoDePermisoAlternativo);
+}
 }
 
   submitted: boolean = false;
@@ -268,10 +271,10 @@ cambiarTipoPermiso(index: number, permiso: string) {
   ]);
 
   estados = [
-    { id: 1, nombre: "solo inngresa", severity: "info" },
-    { id: 2, nombre: "solo buk", severity: "warn" },
-    { id: 3, nombre: "emparejado", severity: "success" },
-    { id: 4, nombre: "discordante", severity: "danger" }
+    { id: 1, nombre: "Inngresa - Nulo", severity: "secondary" },
+    { id: 2, nombre: "Nulo - Buk", severity: "secondary" },
+    { id: 3, nombre: "Iguales", severity: "success" },
+    { id: 4, nombre: "Difieren", severity: "warn" }
   ]
   //////
   selectedPermisos!: UnionTodosBukInntegra[] | [];
@@ -344,14 +347,15 @@ cambiarTipoPermiso(index: number, permiso: string) {
   unionTodosBukInntegraEstado = computed(() => {
     return this.unionTodosBukInntegra().map((uni, index) => {
       const inngresa = uni.permiso
-      // const buk = uni.todosBuk()
       const buk = (uni.todosBuk as WritableSignal<TodosBuk | null>)!();
 
       if (!inngresa)
         return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 2) }
       if (!buk)
         return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 1) }
+      if(inngresa.tipoDePermiso==this.bukTipoPermiso(buk))
       return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 3) }
+      return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 4) }
     })
   });
 
@@ -395,7 +399,6 @@ cambiarTipoPermiso(index: number, permiso: string) {
         })
         const item = this.unionTodosBukInntegra()[index];
         if (!item) return;
-        // item?.todosBuk?.set(exitoso?.response?.permission ?? null);
         const { paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime, ...rest } = permiso
         const permisoSet = {
           ...rest,
@@ -434,7 +437,6 @@ cambiarTipoPermiso(index: number, permiso: string) {
         detail: detalle,
         life: 3000
       });
-      console.log(data)
     })
       .catch((e) => {
         console.error(e);
@@ -453,23 +455,17 @@ cambiarTipoPermiso(index: number, permiso: string) {
 
     this.permisoService.getPermisos(fi, ff).then((data) => {
       const mapped = (data as any[]).map(g => ({
-        ...g,
+        permiso:{
+          ...g.permiso,
+          tipoDePermisoAlternativo:signal<string | null>(g.permiso?.tipoDePermisoAlternativo ?? null)
+        },
         // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
         todosBuk: signal<TodosBuk | undefined>(g.todosBuk ?? null)
       })) as UnionTodosBukInntegra[];
 
       this.unionTodosBukInntegra.set(mapped);
-      // this.unionTodosBukInntegra.set(data);
     });
 
-    this.cols = [
-      { field: 'nombre', header: 'Nombre' },
-      { field: 'dia', header: 'Dia' },
-      { field: 'entrada_real', header: 'Entrada Real' },
-      { field: 'atraso', header: 'Atraso' },
-      { field: 'atraso', header: 'Atraso2' },
-    ];
-
-    this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
+  
   }
 }
