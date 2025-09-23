@@ -30,6 +30,7 @@
                                 "glob": "**/*",
                                 "input": "public"
                             },
+                            "src/assets/img",
                             "src/web.config"
                         ],
                         "styles": [
@@ -60,9 +61,9 @@
                         }
                     },
                     "defaultConfiguration": "development",
-                     "options": {
-             "proxyConfig": "src/proxy.conf.json"
-           }
+                    "options": {
+                        "proxyConfig": "src/proxy.conf.json"
+                    }
                 },
                 "extract-i18n": {
                     "builder": "@angular-devkit/build-angular:extract-i18n"
@@ -92,6 +93,6 @@
         }
     },
     "cli": {
-      "analytics": false
+        "analytics": false
     }
 }

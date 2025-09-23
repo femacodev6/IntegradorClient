@@ -5,6 +5,8 @@ import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
+import { AuthService } from '../../pages/service/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-topbar',
@@ -48,9 +50,8 @@ import { LayoutService } from '../service/layout.service';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
+                    <button type="button" (click)="salir()" class="layout-topbar-action">
                         <i class="pi pi-sign-out"></i>
-                        <span>Salir</span>
                     </button>
                 </div>
             </div>
@@ -60,9 +61,13 @@ import { LayoutService } from '../service/layout.service';
 export class AppTopbar {
     items!: MenuItem[];
 
-    constructor(public layoutService: LayoutService) {}
+    constructor(public layoutService: LayoutService, private router: Router, private auth: AuthService) {}
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    }
+    salir() {
+        this.auth.clear();
+        this.router.navigate(['/auth/login']);
     }
 }

@@ -91,6 +91,8 @@ export class Permisos implements OnInit {
 
   fechaFin = signal<Date | null>(null);
 
+  rangeDates = signal<Date[]>([]);
+
   permisoDialog: boolean = false;
 
   unionTodosBukInntegra = signal<UnionTodosBukInntegra[]>([]);
@@ -107,11 +109,11 @@ export class Permisos implements OnInit {
     this.menuItems = [
       {
         label: 'compensacion por horas femaco',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_horas_femaco",row.permiso.tipoDePermiso)
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_horas_femaco", row.permiso.tipoDePermiso)
       },
       {
         label: 'compensacion por dias',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_dias",row.permiso.tipoDePermiso)
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "compensacion_por_dias", row.permiso.tipoDePermiso)
       }
     ];
 
@@ -123,31 +125,31 @@ export class Permisos implements OnInit {
     this.menuItems = [
       {
         label: 'inasistencia',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "inasistencia",row.permiso.tipoDePermiso)
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "inasistencia", row.permiso.tipoDePermiso)
       },
       {
         label: 'cese',
-        command: () => this.cambiarTipoPermiso(row.rowIndex, "cese",row.permiso.tipoDePermiso)
+        command: () => this.cambiarTipoPermiso(row.rowIndex, "cese", row.permiso.tipoDePermiso)
       }
     ];
 
     menu.toggle(event);
   }
 
-cambiarTipoPermiso(index: number, tipoDePermisoAlternativo: string,tipoDePermiso: string) {
-  const lista = this.unionTodosBukInntegra();
-  if (!lista) return;
+  cambiarTipoPermiso(index: number, tipoDePermisoAlternativo: string, tipoDePermiso: string) {
+    const lista = this.unionTodosBukInntegra();
+    if (!lista) return;
 
-  const item = lista[index];
-  if (!item?.permiso?.tipoDePermisoAlternativo) return;
-if(tipoDePermisoAlternativo==tipoDePermiso){
+    const item = lista[index];
+    if (!item?.permiso?.tipoDePermisoAlternativo) return;
+    if (tipoDePermisoAlternativo == tipoDePermiso) {
 
-  item.permiso.tipoDePermisoAlternativo.set(null);
-} else{
+      item.permiso.tipoDePermisoAlternativo.set(null);
+    } else {
 
-  item.permiso.tipoDePermisoAlternativo.set(tipoDePermisoAlternativo);
-}
-}
+      item.permiso.tipoDePermisoAlternativo.set(tipoDePermisoAlternativo);
+    }
+  }
 
   submitted: boolean = false;
 
@@ -285,11 +287,16 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
   unionTodosBukInntegraFilterDni = computed(() => {
     return this.unionTodosBukInntegraEstado().filter(ut => {
       const filter = (this.dniFilter() ?? '').toLowerCase();
+
+      const todos = typeof ut.todosBuk === 'function'
+        ? ut.todosBuk()  // es un signal
+        : ut.todosBuk;   // es un objeto o null
+
       return (
         ut.permiso?.identificacion?.toString().toLowerCase().includes(filter) ||
-        // ut.todosBuk?.dni?.toString().toLowerCase().includes(filter) ||
-        ut.permiso?.fullname?.toString().toLowerCase().includes(filter)
-        // ut.todosBuk?.fullname?.toString().toLowerCase().includes(filter)
+        todos?.dni?.toString().toLowerCase().includes(filter) ||
+        ut.permiso?.fullname?.toString().toLowerCase().includes(filter) ||
+        todos?.fullname?.toString().toLowerCase().includes(filter)
       );
     })
   })
@@ -353,8 +360,8 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
         return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 2) }
       if (!buk)
         return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 1) }
-      if(inngresa.tipoDePermiso==this.bukTipoPermiso(buk))
-      return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 3) }
+      if (inngresa.tipoDePermiso == this.bukTipoPermiso(buk))
+        return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 3) }
       return { ...uni, rowIndex: index, estado: this.estados.find(c => c.id == 4) }
     })
   });
@@ -371,6 +378,8 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
 
     this.fechaInicio.set(inicio);
     this.fechaFin.set(fin);
+    this.rangeDates.set([inicio, fin]);
+
   }
 
   setMesAnterior() {
@@ -380,6 +389,13 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
 
     this.fechaInicio.set(inicio);
     this.fechaFin.set(fin);
+    this.rangeDates.set([inicio, fin]);
+  }
+
+  onIdentificacionClick(identificacion: string) {
+    console.log(identificacion);
+
+    this.dniFilter.set(identificacion.toString())
   }
 
   permisosToBukVolcar() {
@@ -393,49 +409,108 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
         return req.success == true
       })
       exitosos.forEach((exitoso: any) => {
-        const permiso = exitoso.permisoResponse.permission
-        const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
-          return unionTodo.permiso?.hash == permiso.hash
-        })
-        const item = this.unionTodosBukInntegra()[index];
-        if (!item) return;
-        const { paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime, ...rest } = permiso
-        const permisoSet = {
-          ...rest,
-          licencia: null,
-          inasistencia: null,
-          permiso: {
-            paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime
-          }
-        };
-        (item?.todosBuk as WritableSignal<TodosBuk | null>)?.set(permisoSet ?? null);
+        if (exitoso.permisoResponse) {
+          const permiso = exitoso.permisoResponse.permission
+          const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
+            return unionTodo.permiso?.hash == permiso.hash
+          })
+          const item = this.unionTodosBukInntegra()[index];
+          if (!item) return;
+          const { paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime, ...rest } = permiso
+          const permisoSet = {
+            ...rest,
+            licencia: null,
+            inasistencia: null,
+            permiso: {
+              paid, permissionTypeId, permissionTypeCode, timeMeasure, startTime, endTime
+            }
+          };
+          (item?.todosBuk as WritableSignal<TodosBuk | null>)?.set(permisoSet ?? null);
+        }
+        if (exitoso.inasistenciaResponse) {
+          const inasistencia = exitoso.inasistenciaResponse.absence
+          const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
+            return unionTodo.permiso?.hash == inasistencia.hash
+          })
+          const item = this.unionTodosBukInntegra()[index];
+          if (!item) return;
+          const { absenceTypeId, absenceTypeCode, ...rest } = inasistencia
+          const inasistenciaSet = {
+            ...rest,
+            licencia: null,
+            permiso: null,
+            inasistencia: {
+              absenceTypeId, absenceTypeCode
+            }
+          };
+          (item?.todosBuk as WritableSignal<TodosBuk | null>)?.set(inasistenciaSet ?? null);
+        }
+        if (exitoso.licenciaResponse) {
+          const licencia = exitoso.licenciaResponse.licence
+          const index = this.unionTodosBukInntegra().findIndex(unionTodo => {
+            return unionTodo.permiso?.hash == licencia.hash
+          })
+          const item = this.unionTodosBukInntegra()[index];
+          if (!item) return;
+          const { licenceTypeId, format, type, motivo, medicRut, licenceTypeCode, licenceNumber, medicName, ...rest } = licencia
+          const licenciaSet = {
+            ...rest,
+            inasistencia: null,
+            permiso: null,
+            licencia: {
+              licenceTypeId, format, type, motivo, medicRut, licenceTypeCode, licenceNumber, medicName
+            }
+          };
+          (item?.todosBuk as WritableSignal<TodosBuk | null>)?.set(licenciaSet ?? null);
+        }
+      })
+
+      const fallidos = data.items.filter((req: any) => {
+        return req.success == false
+      }).map((fail: any) => {
+        return {
+          empleado: fail.employeeId,
+          stack: fail.errorResponseDetalle.message
+        }
       })
 
       const erroneos = data.total - data.succeeded
       let detalle
       let severidad
       let sumario
+      let sticky
       if (data.total == data.succeeded) {
         detalle = data.succeeded + ' permisos traspasadas a Buk'
         severidad = 'success'
         sumario = 'Éxito total'
+        sticky = false
       }
       if (erroneos != data.total && data.total > data.succeeded) {
-        detalle = data.succeeded + ' permisos traspasadas a Buk, ' + erroneos + ' permisos fallidas'
+        detalle = data.succeeded + ' permisos traspasadas a Buk, ' + erroneos + ' permisos fallidas, ' + JSON.stringify(fallidos, null, 2)
         severidad = 'warn'
         sumario = 'Éxito parcial'
+        sticky = true
       }
       if (erroneos == data.total) {
-        detalle = erroneos + ' permisos fallidas'
+        // detalle = erroneos + ' permisos fallidas, ' + JSON.stringify(fallidos, null, 2)
+        detalle =
+          `${data.succeeded} permisos traspasadas a Buk, ${erroneos} permisos fallidas` +
+          (erroneos > 0
+            ? '\n\nDetalles:\n' + fallidos
+              .map((f:any) => `Empleado: ${f.empleado}\nError: ${f.stack}`)
+              .join('\n\n')
+            : '');
         severidad = 'error'
         sumario = 'Fallo total'
+        sticky = true
       }
 
       this.messageService.add({
         severity: severidad,
         summary: sumario,
         detail: detalle,
-        life: 3000
+        life: 3000,
+        sticky: sticky
       });
     })
       .catch((e) => {
@@ -444,28 +519,66 @@ if(tipoDePermisoAlternativo==tipoDePermiso){
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo traspasar el volcado permisos a Buk ' + e.error.error,
-          life: 4000
+          sticky: true
         });
       });
   }
 
   loadDemoData() {
-    const fi = this.formatDate(this.fechaInicio());
-    const ff = this.formatDate(this.fechaFin());
+    const fi = this.formatDate(this.rangeDates()[0]);
+    const ff = this.formatDate(this.rangeDates()[1]);
+    // const fi = this.formatDate(this.fechaInicio());
+    // const ff = this.formatDate(this.fechaFin());
 
     this.permisoService.getPermisos(fi, ff).then((data) => {
-      const mapped = (data as any[]).map(g => ({
-        permiso:{
-          ...g.permiso,
-          tipoDePermisoAlternativo:signal<string | null>(g.permiso?.tipoDePermisoAlternativo ?? null)
-        },
-        // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
+
+      // const mapped = (data.unionTodosBukInntegra as any[]).map(g => ({
+      //   permiso: {
+      //     ...g.permiso,
+      //     tipoDePermisoAlternativo: signal<string | null>(g.permiso?.tipoDePermisoAlternativo ?? null)
+      //   },
+      //   // si el backend ya manda un array en g.tardanzasBuk lo usamos, si no, lo inicializamos vacio
+      //   todosBuk: signal<TodosBuk | undefined>(g.todosBuk ?? null)
+      // })) as UnionTodosBukInntegra[];
+
+      const mapped = (data.unionTodosBukInntegra as any[]).map(g => ({
+        permiso: g.permiso
+          ? {
+            ...g.permiso,
+            tipoDePermisoAlternativo: signal<string | null>(g.permiso.tipoDePermisoAlternativo ?? null)
+          }
+          : null,
         todosBuk: signal<TodosBuk | undefined>(g.todosBuk ?? null)
       })) as UnionTodosBukInntegra[];
 
       this.unionTodosBukInntegra.set(mapped);
-    });
 
-  
+      const status = data.status
+      if (status?.status == "ERROR") {
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: status?.mensaje + " " + status?.reason,
+          sticky: true
+        });
+      }
+      else {
+        this.messageService.add({
+          severity: "success",
+          summary: "Exito",
+          detail: status?.mensaje,
+          life: 3000
+        });
+      }
+    })
+      .catch((e) => {
+        console.error(e);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo recibir respuesta' + e.error,
+          sticky: true
+        });
+      });
   }
 }

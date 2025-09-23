@@ -25,11 +25,6 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-briefcase',
                 routerLink: ['/pages'],
                 items: [
-                    // {
-                    //     label: 'Permisos',
-                    //     icon: 'pi pi-fw pi-tablet',
-                    //     routerLink: ['http://192.168.1.50:10050/Licencias/ObtenerPermisosvista']
-                    // },
                     {
                         label: 'Permisos',
                         icon: 'pi pi-fw pi-tablet',
@@ -42,7 +37,7 @@ export class AppMenu {
                     },
                     {
                         label: 'Horas extras',
-                        icon: 'pi pi-fw pi-hourglass',
+                        icon: 'pi pi-fw pi-clock',
                         routerLink: ['/pages/horasextra']
                     },
                 ]
